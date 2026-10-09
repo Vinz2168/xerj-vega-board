@@ -1,0 +1,15 @@
+# dipendenze e strumenti installati localmente per i test
+node_modules/
+pw-browsers/
+.npm-cache/
+package-lock.json
+# binario XERJ, archivio scaricato e dati del nodo di test
+bin/
+dl/
+xerj-data/
+# output dei test (si rigenerano con tools/*): si tengono solo i casi minimi e l'esito del validatore
+test-out/*
+!test-out/repro/
+!test-out/validate-start.txt
+!test-out/validate-end.txt
+.DS_Store

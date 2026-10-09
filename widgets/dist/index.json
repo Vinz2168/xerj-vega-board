@@ -1,0 +1,15 @@
+{
+  "$comment": "Widget standard. Non modificare per personalizzare: crea un widget in widgets/custom (stesso type = sostituzione).",
+  "source": "dist",
+  "widgets": [
+    { "type": "metric", "module": "./metric.js" },
+    { "type": "timeseries", "module": "./timeseries.js" },
+    { "type": "stacked", "module": "./stacked.js" },
+    { "type": "topn", "module": "./topn.js" },
+    { "type": "donut", "module": "./donut.js" },
+    { "type": "heatmap", "module": "./heatmap.js" },
+    { "type": "table", "module": "./table.js" },
+    { "type": "search", "module": "./search.js" },
+    { "type": "vegalite", "module": "./vegalite.js" }
+  ]
+}

@@ -1,0 +1,384 @@
+[
+  {
+    "id": "web-traffic",
+    "title": {
+      "en": "Web traffic",
+      "it": "Traffico web"
+    },
+    "time": "7d",
+    "refresh": 0,
+    "query": "",
+    "filters": [],
+    "panels": [
+      {
+        "id": "p01",
+        "type": "metric",
+        "title": {
+          "en": "Requests",
+          "it": "Richieste"
+        },
+        "w": 3,
+        "h": "s",
+        "params": {
+          "fn": "count",
+          "unit": "",
+          "index": "ax-weblogs",
+          "timefield": "@timestamp"
+        }
+      },
+      {
+        "id": "p02",
+        "type": "metric",
+        "title": {
+          "en": "Average latency",
+          "it": "Latenza media"
+        },
+        "w": 3,
+        "h": "s",
+        "params": {
+          "fn": "avg",
+          "unit": "ms",
+          "index": "ax-weblogs",
+          "timefield": "@timestamp",
+          "field": "response_ms"
+        }
+      },
+      {
+        "id": "p03",
+        "type": "metric",
+        "title": {
+          "en": "5xx errors",
+          "it": "Errori 5xx"
+        },
+        "w": 3,
+        "h": "s",
+        "params": {
+          "fn": "count",
+          "unit": "",
+          "index": "ax-weblogs",
+          "timefield": "@timestamp",
+          "filter": "status:5*"
+        }
+      },
+      {
+        "id": "p04",
+        "type": "bullet",
+        "title": {
+          "en": "p95 latency vs SLO",
+          "it": "Latenza p95 vs SLO"
+        },
+        "w": 3,
+        "h": "s",
+        "params": {
+          "fn": "p95",
+          "target": 500,
+          "better": "lower",
+          "unit": "ms",
+          "index": "ax-weblogs",
+          "timefield": "@timestamp",
+          "field": "response_ms"
+        }
+      },
+      {
+        "id": "p05",
+        "type": "stacked",
+        "title": {
+          "en": "Requests by HTTP status",
+          "it": "Richieste per stato HTTP"
+        },
+        "w": 8,
+        "h": "m",
+        "params": {
+          "size": 6,
+          "style": "bar",
+          "interval": "auto",
+          "index": "ax-weblogs",
+          "timefield": "@timestamp",
+          "split": "status"
+        }
+      },
+      {
+        "id": "p06",
+        "type": "donut",
+        "title": {
+          "en": "Countries",
+          "it": "Paesi"
+        },
+        "w": 4,
+        "h": "m",
+        "params": {
+          "size": 5,
+          "index": "ax-weblogs",
+          "timefield": "@timestamp",
+          "field": "country"
+        }
+      },
+      {
+        "id": "p07",
+        "type": "heatmap",
+        "title": {
+          "en": "5xx errors by host",
+          "it": "Errori 5xx per host"
+        },
+        "w": 6,
+        "h": "m",
+        "params": {
+          "size": 5,
+          "interval": "auto",
+          "index": "ax-weblogs",
+          "timefield": "@timestamp",
+          "field": "host",
+          "filter": "status:5*"
+        }
+      },
+      {
+        "id": "p08",
+        "type": "topn",
+        "title": {
+          "en": "Most requested paths",
+          "it": "Percorsi più richiesti"
+        },
+        "w": 6,
+        "h": "m",
+        "params": {
+          "size": 8,
+          "fn": "count",
+          "index": "ax-weblogs",
+          "timefield": "@timestamp",
+          "field": "path"
+        }
+      },
+      {
+        "id": "p09",
+        "type": "timeseries",
+        "title": {
+          "en": "Average latency over time",
+          "it": "Latenza media nel tempo"
+        },
+        "w": 12,
+        "h": "s",
+        "params": {
+          "fn": "avg",
+          "style": "line",
+          "interval": "auto",
+          "index": "ax-weblogs",
+          "timefield": "@timestamp",
+          "field": "response_ms"
+        }
+      },
+      {
+        "id": "p10",
+        "type": "search",
+        "title": {
+          "en": "Search the logs",
+          "it": "Cerca nei log"
+        },
+        "w": 12,
+        "h": "l",
+        "params": {
+          "size": 25,
+          "q": "timeout",
+          "fields": [],
+          "tags": [
+            "host",
+            "status",
+            "country"
+          ],
+          "index": "ax-weblogs",
+          "timefield": "@timestamp",
+          "titleField": "path"
+        }
+      },
+      {
+        "id": "p11",
+        "type": "table",
+        "title": {
+          "en": "Latest requests",
+          "it": "Ultime richieste"
+        },
+        "w": 12,
+        "h": "m",
+        "params": {
+          "size": 15,
+          "columns": [
+            "@timestamp",
+            "host",
+            "method",
+            "path",
+            "status",
+            "response_ms"
+          ],
+          "index": "ax-weblogs",
+          "timefield": "@timestamp"
+        }
+      }
+    ]
+  },
+  {
+    "id": "orders",
+    "title": {
+      "en": "Orders",
+      "it": "Ordini"
+    },
+    "time": "30d",
+    "refresh": 0,
+    "query": "",
+    "filters": [],
+    "panels": [
+      {
+        "id": "p01",
+        "type": "metric",
+        "title": {
+          "en": "Orders",
+          "it": "Ordini"
+        },
+        "w": 3,
+        "h": "s",
+        "params": {
+          "fn": "count",
+          "unit": "",
+          "index": "ax-orders",
+          "timefield": "order_date"
+        }
+      },
+      {
+        "id": "p02",
+        "type": "metric",
+        "title": {
+          "en": "Revenue",
+          "it": "Fatturato"
+        },
+        "w": 3,
+        "h": "s",
+        "params": {
+          "fn": "sum",
+          "unit": "€",
+          "index": "ax-orders",
+          "timefield": "order_date",
+          "field": "total"
+        }
+      },
+      {
+        "id": "p03",
+        "type": "metric",
+        "title": {
+          "en": "Average order value",
+          "it": "Scontrino medio"
+        },
+        "w": 3,
+        "h": "s",
+        "params": {
+          "fn": "avg",
+          "unit": "€",
+          "index": "ax-orders",
+          "timefield": "order_date",
+          "field": "total"
+        }
+      },
+      {
+        "id": "p04",
+        "type": "metric",
+        "title": {
+          "en": "Refunds",
+          "it": "Rimborsi"
+        },
+        "w": 3,
+        "h": "s",
+        "params": {
+          "fn": "count",
+          "unit": "",
+          "index": "ax-orders",
+          "timefield": "order_date",
+          "filter": "status:rimborsato"
+        }
+      },
+      {
+        "id": "p05",
+        "type": "timeseries",
+        "title": {
+          "en": "Daily revenue",
+          "it": "Fatturato giornaliero"
+        },
+        "w": 8,
+        "h": "m",
+        "params": {
+          "fn": "sum",
+          "style": "area",
+          "interval": "1d",
+          "index": "ax-orders",
+          "timefield": "order_date",
+          "field": "total"
+        }
+      },
+      {
+        "id": "p06",
+        "type": "donut",
+        "title": {
+          "en": "Order status",
+          "it": "Stato ordini"
+        },
+        "w": 4,
+        "h": "m",
+        "params": {
+          "size": 4,
+          "index": "ax-orders",
+          "timefield": "order_date",
+          "field": "status"
+        }
+      },
+      {
+        "id": "p07",
+        "type": "topn",
+        "title": {
+          "en": "Revenue by category",
+          "it": "Fatturato per categoria"
+        },
+        "w": 6,
+        "h": "m",
+        "params": {
+          "size": 6,
+          "fn": "sum",
+          "index": "ax-orders",
+          "timefield": "order_date",
+          "field": "category",
+          "mfield": "total"
+        }
+      },
+      {
+        "id": "p08",
+        "type": "stacked",
+        "title": {
+          "en": "Orders by category",
+          "it": "Ordini per categoria"
+        },
+        "w": 6,
+        "h": "m",
+        "params": {
+          "size": 6,
+          "style": "area",
+          "interval": "1d",
+          "index": "ax-orders",
+          "timefield": "order_date",
+          "split": "category"
+        }
+      },
+      {
+        "id": "p09",
+        "type": "vegalite",
+        "title": {
+          "en": "Items per order",
+          "it": "Articoli per ordine"
+        },
+        "w": 12,
+        "h": "s",
+        "params": {
+          "body": "{\n  \"size\": 0,\n  \"query\": \"%context%\",\n  \"aggs\": {\n    \"n\": {\n      \"terms\": {\n        \"field\": \"items\",\n        \"size\": 10,\n        \"order\": {\n          \"_key\": \"asc\"\n        }\n      }\n    }\n  }\n}",
+          "path": "aggregations.n.buckets",
+          "spec": "{\n  \"mark\": {\n    \"type\": \"bar\",\n    \"cornerRadiusEnd\": 2\n  },\n  \"encoding\": {\n    \"x\": {\n      \"field\": \"key\",\n      \"type\": \"ordinal\",\n      \"title\": \"Items in the order\",\n      \"axis\": {\n        \"labelAngle\": 0\n      }\n    },\n    \"y\": {\n      \"field\": \"doc_count\",\n      \"type\": \"quantitative\",\n      \"title\": null,\n      \"axis\": {\n        \"tickCount\": 3\n      }\n    },\n    \"tooltip\": [\n      {\n        \"field\": \"key\",\n        \"title\": \"Items\"\n      },\n      {\n        \"field\": \"doc_count\",\n        \"title\": \"Orders\",\n        \"format\": \",d\"\n      }\n    ]\n  }\n}",
+          "index": "ax-orders",
+          "timefield": "order_date"
+        }
+      }
+    ]
+  }
+]

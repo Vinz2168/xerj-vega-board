@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dashboard XERJ Vega Board",
+  "description": "Definizione di una dashboard. Su XERJ è salvata in vega-dashboards/_doc/<id> come { title, updated_at, definition: <questo JSON serializzato> }.",
+  "type": "object",
+  "required": ["id", "title", "panels"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "Slug del titolo; usato come _id del documento." },
+    "title": { "type": "string", "minLength": 1 },
+    "time": {
+      "description": "Intervallo salvato con la dashboard: relativo oppure assoluto in epoch ms.",
+      "oneOf": [
+        { "type": "string", "enum": ["15m", "1h", "4h", "24h", "7d", "30d"] },
+        { "type": "object", "required": ["from", "to"], "properties": { "from": { "type": "integer" }, "to": { "type": "integer" } }, "additionalProperties": false }
+      ]
+    },
+    "refresh": { "type": "integer", "enum": [0, 15, 60, 300], "description": "Aggiornamento automatico in secondi (0 = spento)." },
+    "query": { "type": "string", "description": "Query string applicata a tutti i pannelli." },
+    "filters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["field", "value"],
+        "properties": {
+          "field": { "type": "string" },
+          "value": { "type": ["string", "number", "boolean"] },
+          "neg": { "type": "boolean", "description": "true = esclude il valore (must_not)." },
+          "phrase": { "type": "boolean", "description": "true = match_phrase invece di term (campi di testo)." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "panels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "params"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "description": "type di un widget registrato (widgets/*/index.json)." },
+          "title": { "type": "string" },
+          "w": { "type": "integer", "enum": [3, 4, 6, 8, 12], "description": "Colonne su 12." },
+          "h": { "type": "string", "enum": ["s", "m", "l"], "description": "Altezza: s 116px, m 236px, l 360px di area grafico." },
+          "params": {
+            "type": "object",
+            "description": "Valori dei parametri dichiarati dal widget. Sempre presenti: index; quasi sempre timefield.",
+            "required": ["index"],
+            "properties": {
+              "index": { "type": "string" },
+              "timefield": { "type": "string" },
+              "filter": { "type": "string", "description": "Query string solo per questo pannello." }
+            }
+          }
+        }
+      }
+    }
+  }
+}

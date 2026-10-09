@@ -1,0 +1,7 @@
+{
+  "$comment": "Widget personalizzati. Caricati dopo quelli standard: un type uguale sostituisce il widget dist. Usa \"enabled\": false per disattivarne uno senza cancellarlo.",
+  "source": "custom",
+  "widgets": [
+    { "type": "bullet", "module": "./bullet.js" }
+  ]
+}

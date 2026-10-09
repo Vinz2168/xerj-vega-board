@@ -1,0 +1,4 @@
+--- fields "*"
+{"took":0,"timed_out":false,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0},"hits":{"total":{"value":467,"relation":"eq"},"max_score":3.3920186,"hits":[{"_index":"ax-weblogs","_id":"w8d","_score":3.3920186}]}}
+--- fields "message"
+{"took":0,"timed_out":false,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0},"hits":{"total":{"value":467,"relation":"eq"},"max_score":3.3920186,"hits":[{"_index":"ax-weblogs","_id":"w8d","_score":3.3920186,"highlight":{"message":["GET / failed with 500: upstream <em>timeout</em> contacting search-backend after 45.3 ms"]}}]}}

@@ -1,0 +1,54 @@
+/* Dashboard: catalogo a sinistra (solo in modifica), griglia a 12 colonne, editor laterale a destra. */
+.pagebar .actions{margin-left:auto}
+.dash-body{display:flex;gap:16px;align-items:flex-start}
+.palette{display:none;flex:0 0 236px;position:sticky;top:calc(var(--hdr,130px) + 12px);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;max-height:calc(100vh - var(--hdr,130px) - 32px);overflow:auto}
+body.editing .palette{display:block}
+.palette h2{margin:0 0 4px;font-size:13px;font-weight:600}
+.palette h3{margin:12px 0 6px;font:500 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.palette p.lead{margin:0;color:var(--muted);font-size:12.5px}
+.wlist{display:grid;gap:6px}
+.witem{display:grid;grid-template-columns:30px 1fr;gap:9px;align-items:center;text-align:left;width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer}
+.witem:hover{border-color:var(--accent)}
+.witem svg{width:30px;height:30px;color:var(--accent)}
+.witem b{display:block;font-weight:500;font-size:13px}
+.witem span{display:block;font-size:11.5px;color:var(--muted);line-height:1.3}
+.badge{font:normal 10px var(--mono);background:var(--accent-soft);border-radius:4px;padding:0 4px;color:var(--fg)}
+@media (max-width:900px){
+  .dash-body{flex-direction:column}
+  .palette{position:static;flex:none;width:100%;max-height:none}
+  .wlist{display:flex;overflow-x:auto;padding-bottom:4px}
+  .witem{flex:0 0 200px}
+}
+
+.grid{flex:1;min-width:0;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-content:start;width:100%}
+.panel{grid-column:span var(--w);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0;display:flex;flex-direction:column;transition:box-shadow .15s,border-color .15s}
+.panel.active{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.panel.drop-before{box-shadow:-4px 0 0 0 var(--accent)}
+.panel.drop-after{box-shadow:4px 0 0 0 var(--accent)}
+.panel.dragging{opacity:.45}
+@media (max-width:1100px){.panel.w3,.panel.w4{grid-column:span 6}.panel.w8{grid-column:span 12}}
+@media (max-width:760px){.panel{grid-column:span 12 !important}}
+.ph{display:flex;align-items:center;gap:8px;padding:10px 12px 0;min-height:36px}
+.ph h3{margin:0;font-size:13px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.editing .ph h3{cursor:pointer}
+.ph .meta{font:11px var(--mono);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.grip{display:none;cursor:grab;color:var(--muted);font:14px var(--mono);letter-spacing:-2px;user-select:none}
+.tools{display:none;gap:2px}
+body.editing .grip,body.editing .tools{display:flex}
+.tools button{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center}
+.tools button:hover{background:var(--sunk);color:var(--fg)}
+.tools svg{width:16px;height:16px}
+.pb{padding:8px 12px 12px;position:relative;min-width:0}
+.pb .vega-embed{width:100%;display:block}
+.pb .vega-embed svg{display:block}
+.empty{grid-column:1/-1;border:1.5px dashed var(--line);border-radius:var(--r);padding:48px 20px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--fg);font-size:15px;margin-bottom:4px}
+
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(var(--drawer),100%);background:var(--surface);border-left:1px solid var(--line);box-shadow:var(--shadow);z-index:40;transform:translateX(102%);transition:transform .2s;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body.drawer-open .drawer{transform:none}
+.dh{display:flex;align-items:flex-start;gap:10px;padding:16px 16px 12px;border-bottom:1px solid var(--line)}
+.dh h2{margin:4px 0 0;font-size:16px;font-weight:600}
+.dh .x{margin-left:auto}
+.dform{overflow:auto;padding:14px 16px 24px;display:grid;gap:14px;align-content:start;flex:1;margin:0}
+.edit-only{display:none}
+body.editing .edit-only{display:inline-flex}

@@ -1,0 +1,14 @@
+{
+  "$comment": "Main extension point. Pages and widget manifests load in this order. Page titles may be a string or { en, it }. See AGENTS.md.",
+  "connection": { "mode": "xerj", "url": "http://localhost:8080/es", "key": "" },
+  "dashboardIndex": "vega-dashboards",
+  "pages": [
+    { "id": "dashboard", "title": { "en": "Dashboard", "it": "Dashboard" }, "module": "pages/dashboard/index.js", "css": "pages/dashboard/dashboard.css" },
+    { "id": "discover", "title": { "en": "Discover", "it": "Discover" }, "module": "pages/discover/index.js", "css": "pages/discover/discover.css" },
+    { "id": "devtools", "title": { "en": "Dev Tools", "it": "Dev Tools" }, "module": "pages/devtools/index.js", "css": "pages/devtools/devtools.css" }
+  ],
+  "widgets": [
+    "widgets/dist/index.json",
+    "widgets/custom/index.json"
+  ]
+}

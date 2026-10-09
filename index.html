@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>XERJ Vega Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="core/styles.css">
+<!-- Vega is loaded as a global: widgets never import it, the shell uses it through core/vega.js -->
+<script src="https://cdn.jsdelivr.net/npm/vega@5.30.0/build/vega.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@5.21.0/build/vega-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@6.26.0/build/vega-embed.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="row1">
+      <div class="brand">
+        <div class="glyph" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="brand-txt">
+          <span class="eyebrow">XERJ · Vega Board</span>
+          <label class="vh" for="pageTitle">Title</label>
+          <input id="pageTitle" class="ptitle" readonly>
+        </div>
+      </div>
+      <nav class="tabs" id="nav" role="tablist" aria-label="Pages"></nav>
+      <div class="actions">
+        <button id="btnProblems" class="btn ghost warnbtn" type="button" hidden><b>!</b><span></span></button>
+        <select id="langSel" class="langsel"></select>
+        <button id="btnConn" class="btn ghost" type="button"><span class="dot demo" id="connDot"></span><span id="connLbl">Demo</span></button>
+      </div>
+    </div>
+    <div id="pagebars"></div>
+  </header>
+  <main id="pages"></main>
+</div>
+<div class="modal" id="modal" hidden><div class="mbox" role="dialog" aria-modal="true" id="mbox"></div></div>
+<div class="toast" id="toast" hidden></div>
+<script type="module" src="core/app.js"></script>
+</body>
+</html>

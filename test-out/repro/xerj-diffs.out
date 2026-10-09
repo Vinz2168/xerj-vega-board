@@ -1,0 +1,16 @@
+### D1 highlight: fields "*" (atteso: highlight su message)
+{"took":0,"timed_out":false,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0},"hits":{"total":{"value":467,"relation":"eq"},"max_score":3.3920186,"hits":[{"_index":"ax-weblogs","_id":"w8d","_score":3.3920186}]}}
+### D1b highlight: fields "mess*" (atteso: highlight su message)
+{"took":0,"timed_out":false,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0},"hits":{"total":{"value":467,"relation":"eq"},"max_score":3.3920186,"hits":[{"_index":"ax-weblogs","_id":"w8d","_score":3.3920186}]}}
+### D1c controllo: fields "message" (funziona)
+{"took":0,"timed_out":false,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0},"hits":{"total":{"value":467,"relation":"eq"},"max_score":3.3920186,"hits":[{"_index":"ax-weblogs","_id":"w8d","_score":3.3920186,"highlight":{"message":["GET / failed with 500: upstream <em>timeout</em> contacting search-backend after 45.3 ms"]}}]}}
+### D2 terms order su percentiles "m.95" desc (atteso: api-2, api-1, ...)
+{"took":0,"timed_out":false,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0},"hits":{"total":{"value":10000,"relation":"gte"},"max_score":null,"hits":[]},"aggregations":{"k":{"doc_count_error_upper_bound":0,"sum_other_doc_count":0,"buckets":[{"key":"api-1","doc_count":4650,"m":{"values":{"95.0":250.755}}},{"key":"api-2","doc_count":4194,"m":{"values":{"95.0":819.7549999999999}}},{"key":"cdn-edge","doc_count":2117,"m":{"values":{"95.0":103.11999999999998}}},{"key":"web-1","doc_count":7820,"m":{"values":{"95.0":103.6}}},{"key":"web-2","doc_count":8119,"m":{"values":{"95.0":103.7}}}]}}}
+### D3 terms order su aggregazione inesistente (atteso: 400 "Invalid aggregator order path")
+{"took":46,"timed_out":false,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0},"hits":{"total":{"value":10000,"relation":"gte"},"max_score":null,"hits":[]},"aggregations":{"k":{"doc_count_error_upper_bound":0,"sum_other_doc_count":18056,"buckets":[{"key":"api-1","doc_count":4650},{"key":"api-2","doc_count":4194}]}}} [HTTP 200]
+### D4 query_string lenient:false con valore non numerico su long (atteso: 400 query_shard_exception / number_format_exception)
+{"count":0,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0}} [HTTP 200]
+### D5 header Warning vuoto su ogni risposta (atteso: nessun header Warning senza deprecazioni)
+warning: 299 Elasticsearch-8.13.0 ""
+### D6 _cat/indices include gli indici di sistema .xerj_* (atteso: indici di sistema nascosti di default)
+[{"index":".xerj_cluster_state"},{"index":"vega-dashboards"},{"index":".xerj_idp_config"},{"index":".xerj_users"},{"index":".xerj_alert_fires"},{"index":"ax-weblogs"},{"index":".xerj_sessions"},{"index":".xerj_audit"},{"index":".xerj_magic_links"},{"index":".xerj_alert_rules"},{"index":".xerj_dashboards"},{"index":".xerj_passkeys"},{"index":".xerj_connections"},{"index":".xerj_prefs"},{"index":".xerj_api_tokens"},{"index":".xerj_views"},{"index":"ax-orders"}]

@@ -1,0 +1,20 @@
+(node:11976) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok   catalogue it (201 keys)
+  ok   page dashboard
+  ok   page discover
+  ok   page devtools
+  ok   widget metric (widgets/dist/metric.js)
+  ok   widget timeseries (widgets/dist/timeseries.js)
+  ok   widget stacked (widgets/dist/stacked.js)
+  ok   widget topn (widgets/dist/topn.js)
+  ok   widget donut (widgets/dist/donut.js)
+  ok   widget heatmap (widgets/dist/heatmap.js)
+  ok   widget table (widgets/dist/table.js)
+  ok   widget search (widgets/dist/search.js)
+  ok   widget vegalite (widgets/dist/vegalite.js)
+  ok   widget bullet (widgets/custom/bullet.js)
+  ok   dashboard web-traffic (11 panels)
+  ok   dashboard orders (9 panels)
+
+16 ok, 0 warnings, 0 errors
