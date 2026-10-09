@@ -115,36 +115,107 @@ async function boot() {
     l.onload = l.onerror = () => res(); document.head.appendChild(l);
   });
 
-  /* ---- connessione ---- */
-  const connBtn = $('#btnConn');
+  /* ---- connessione e login ----
+     Come Kibana: schermata di accesso a tutta pagina. Il motore lo decide config.json (connection.engine):
+     XERJ → token API, altrimenti utente e password. Con connection.engineSelectable compare il flag XERJ per sceglierlo. Le credenziali vivono in sessionStorage (backend.js). */
   const paintConn = () => {
     const c = backend.conn;
     $('#connLbl').textContent = c.mode === 'demo' ? t('conn.demo') : c.url.replace(/^https?:\/\//, '');
     $('#connDot').classList.toggle('demo', c.mode === 'demo');
+    $('#btnConn').title = t('conn.change');
+    const lo = $('#btnLogout'); lo.hidden = !backend.loggedIn; lo.title = lo.querySelector('span').textContent = t('login.logout');
+  };
+  const EYE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_OFF = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.2 3.1M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M2 2l20 20"/></svg>';
+  let loginOpen = null;   // Promise della schermata aperta (una sola alla volta)
+  /** Mostra la schermata di accesso; si risolve quando c'è una connessione valida. `cancel` = si può tornare indietro. */
+  function login({ msg = '', info = false, cancel = false } = {}) {
+    if (loginOpen) return loginOpen;
+    modal.isOpen && modal.close();
+    const el = $('#login'), c = backend.conn;
+    const x = backend.engine === 'xerj', sel = backend.engineSelectable;
+    const url = c.url || 'http://localhost:9200', locked = backend.urlLocked;
+    // campo segreto con l'occhio per vederlo provvisoriamente (si richiude all'invio)
+    const secret = (id, attrs) => !backend.revealAllowed ? `<input type="password" id="${id}" ${attrs}>` : `<div class="pw"><input type="password" id="${id}" ${attrs}><button type="button" class="pwtog" data-pw="${id}" aria-pressed="false" aria-label="${esc(t('login.show'))}" title="${esc(t('login.show'))}">${EYE}</button></div>`;
+    el.innerHTML = `<form class="lbox" novalidate autocomplete="on">
+      <div class="lhead"><div class="glyph" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div><span class="eyebrow">XERJ · Vega Board</span><h1>${t('login.title')}</h1></div></div>
+      ${sel ? `<label class="switch"><input type="checkbox" role="switch" id="lXerj"${x ? ' checked' : ''}><span class="track" aria-hidden="true"></span><b>${t('login.xerj')}</b></label>` : ''}
+      <p class="help" id="lEngine">${t(x ? 'login.engineXerj' : 'login.engineEs')}</p>
+      <div class="f"${backend.urlShown ? '' : ' hidden'}><label for="lUrl">${t('login.url')}</label><input type="url" id="lUrl" name="url" value="${esc(url)}" placeholder="http://localhost:9200" autocomplete="url" required${locked ? ' readonly' : ''}>${locked ? `<p class="help">${t('login.urlLocked')}</p>` : ''}</div>
+      <div class="f" data-x="1"><label for="lToken">${t('login.token')}</label>${secret('lToken', 'autocomplete="off" spellcheck="false"')}<p class="help">${t('login.tokenHelp')}</p></div>
+      <div class="f" data-x="0"><label for="lUser">${t('login.user')}</label><input type="text" id="lUser" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" value="${esc(backend.auth?.user || '')}"></div>
+      <div class="f" data-x="0"><label for="lPass">${t('login.pass')}</label>${secret('lPass', 'name="password" autocomplete="current-password"')}</div>
+      <div class="result${msg && !info ? ' bad' : ''}" id="lRes" role="status">${esc(msg)}</div>
+      <button type="submit" class="btn primary lsubmit" id="lGo">${t('login.submit')}</button>
+      ${cancel || backend.demoAllowed ? `<div class="lfoot">${cancel ? `<button type="button" class="btn ghost" id="lCancel">${t('common.cancel')}</button>` : ''}
+        ${backend.demoAllowed ? `<button type="button" class="btn ghost" id="lDemo" title="${esc(t('login.demoHelp'))}">${t('login.demo')}</button>` : ''}</div>` : ''}
+      <p class="help">${t('login.note', { index: '<code>' + esc(backend.dashboardIndex) + '</code>' })}</p>
+    </form>`;
+    const form = el.querySelector('form'), res = $('#lRes');
+    const reveal = (b, on) => {
+      const i = $('#' + b.dataset.pw); i.type = on ? 'text' : 'password';
+      b.setAttribute('aria-pressed', String(on)); b.title = t(on ? 'login.hide' : 'login.show'); b.setAttribute('aria-label', b.title);
+      b.innerHTML = on ? EYE_OFF : EYE;
+    };
+    const hideAll = () => form.querySelectorAll('[data-pw]').forEach(b => reveal(b, false));
+    form.querySelectorAll('[data-pw]').forEach(b => b.addEventListener('click', () => { reveal(b, b.getAttribute('aria-pressed') !== 'true'); $('#' + b.dataset.pw).focus(); }));
+    const isX = () => sel ? $('#lXerj').checked : x;
+    const focusFirst = () => [...form.querySelectorAll('.f:not([hidden]) input:not([readonly])')].find(i => !i.value)?.focus();
+    const sync = () => {
+      form.querySelectorAll('[data-x]').forEach(f => { f.hidden = f.dataset.x !== (isX() ? '1' : '0'); });
+      $('#lEngine').innerHTML = t(isX() ? 'login.engineXerj' : 'login.engineEs');
+    };
+    if (sel) $('#lXerj').addEventListener('change', () => {
+      hideAll(); backend.chooseEngine(isX() ? 'xerj' : 'es');
+      res.className = 'result'; res.textContent = ''; sync(); focusFirst();
+    });
+    sync(); el.hidden = false; document.body.classList.add('login-open');
+    focusFirst();
+    loginOpen = new Promise(resolve => {
+      const done = changed => {
+        el.hidden = true; el.innerHTML = ''; document.body.classList.remove('login-open'); loginOpen = null;
+        if (changed) { paintConn(); app.emit('connection', backend.conn); }
+        resolve(changed);
+      };
+      form.addEventListener('submit', async e => {
+        e.preventDefault(); hideAll();
+        const x = isX(), c = { mode: x ? 'xerj' : 'es', url: $('#lUrl').value.trim().replace(/\/+$/, '') };
+        const a = x ? { key: $('#lToken').value.trim() } : { user: $('#lUser').value.trim(), pass: $('#lPass').value };
+        if (!c.url || (x ? !a.key : !a.user || !a.pass)) { res.className = 'result bad'; res.textContent = t('login.required'); return; }
+        const go = $('#lGo'); go.disabled = true; res.className = 'result'; res.textContent = t('login.checking');
+        try {
+          await backend.probe(c, a);
+          backend.setConnection(c, a); done(true);
+        } catch (err) {
+          res.className = 'result bad';
+          res.textContent = err.status === 401 ? t(x ? 'login.badXerj' : 'login.bad') : err.status === 403 ? t('login.denied') : t('login.unreachable', { msg: err.message });
+          go.disabled = false;
+          (x ? $('#lToken') : $('#lPass')).select();
+        }
+      });
+      if (backend.demoAllowed) $('#lDemo').onclick = () => { backend.setConnection({ mode: 'demo', url: $('#lUrl').value.trim() || url }, null); done(true); };
+      if (cancel) $('#lCancel').onclick = () => done(false);
+    });
+    return loginOpen;
+  }
+  /** All'avvio: in demo, con una sessione valida o su un server senza autenticazione si entra direttamente. */
+  async function ensureLogin() {
+    if (backend.isDemo()) return;
+    try { await backend.ping(); }
+    catch (e) { await login({ msg: e.status === 401 || backend.loggedIn ? '' : t('login.unreachable', { msg: e.message }) }); }
+  }
+  backend.onUnauthorized = () => {
+    if (loginOpen) return;
+    backend.logout(); paintConn();
+    login({ msg: t('login.expired') }).then(() => refreshActive());
   };
   paintConn();
-  connBtn.addEventListener('click', () => {
-    const c = backend.conn;
-    const box = modal.open(`<h2>${t('conn.title')}</h2>
-      <div class="seg" role="radiogroup" aria-label="${t('conn.source')}">
-        <label><input type="radio" name="cm" value="demo"${c.mode === 'demo' ? ' checked' : ''}>${t('conn.demo')}</label>
-        <label><input type="radio" name="cm" value="xerj"${c.mode === 'xerj' ? ' checked' : ''}>XERJ</label>
-      </div>
-      <p>${t('conn.demoHelp')}</p>
-      <div class="f"><label for="cUrl">${t('conn.url')}</label><input type="url" id="cUrl" value="${esc(c.url)}" placeholder="http://localhost:9200"></div>
-      <div class="f"><label for="cKey">${t('conn.key')}</label><input type="password" id="cKey" value="${esc(c.key || '')}" autocomplete="off"><p class="help">${t('conn.keyHelp')}</p></div>
-      <div class="note">${t('conn.note', { index: '<code>' + esc(backend.dashboardIndex) + '</code>' })}</div>
-      <div class="result" id="cRes"></div>
-      <div class="mrow"><button type="button" class="btn ghost" id="cTest">${t('conn.test')}</button><button type="button" class="btn ghost" data-close>${t('common.cancel')}</button><button type="button" class="btn primary" id="cSave">${t('conn.use')}</button></div>`);
-    const read = () => ({ mode: box.querySelector('input[name=cm]:checked').value, url: $('#cUrl').value.trim() || 'http://localhost:9200', key: $('#cKey').value.trim() });
-    $('#cTest').onclick = async () => {
-      const res = $('#cRes'), prev = backend.conn; backend.setConnection(read());
-      res.className = 'result'; res.textContent = t('conn.testing');
-      try { const r = await backend.ping(); res.className = 'result ok'; res.textContent = t('conn.ok', { name: r.name || r.cluster_name || 'node', version: r.version?.number || '?' }); }
-      catch (e) { res.className = 'result bad'; res.textContent = t('conn.fail', { msg: e.message }); }
-      backend.setConnection(prev);
-    };
-    $('#cSave').onclick = () => { backend.setConnection(read()); paintConn(); modal.close(); app.emit('connection', backend.conn); refreshActive(); };
+  $('#btnConn').addEventListener('click', async () => { if (await login({ cancel: true })) refreshActive(); });
+  $('#btnLogout').addEventListener('click', async () => {
+    backend.logout(); paintConn();
+    await login({ msg: t('login.loggedOut'), info: true });
+    refreshActive();
   });
 
   /* ---- problemi del registry ---- */
@@ -176,6 +247,7 @@ async function boot() {
   new ResizeObserver(() => document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px')).observe(hdr);
 
   window.xvb = app; // comodo da console e per gli agent che ispezionano la pagina
+  await ensureLogin();
   const first = location.hash.replace(/^#\/?/, '');
   await show(pages.has(first) ? first : config.pages[0].id);
 }

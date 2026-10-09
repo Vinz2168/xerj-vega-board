@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "description": "Dashboard, Discover e Dev Tools leggeri per XERJ e motori compatibili Elasticsearch, con widget Vega-Lite modulari.",
+  "license": "Apache-2.0",
   "scripts": {
     "serve": "python3 -m http.server 8080",
     "validate": "node tools/validate.mjs"

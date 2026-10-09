@@ -22,7 +22,7 @@ export default {
     return { ...kit.baseSpec(h), data: { values: rows },
       mark: { type: 'arc', innerRadius: Math.round(h * 0.24), padAngle: 0.012, cornerRadius: 2, cursor: 'pointer', stroke: t.surface, strokeWidth: 1 },
       encoding: { theta: { field: 'v', type: 'quantitative', stack: true },
-        color: { field: 'k', type: 'nominal', title: null, sort: rows.map(r => String(r.k)), scale: { domain: rows.map(r => r.k), range: rows.map((r, i) => r.other ? t.other : t.c[i % t.c.length]) }, legend: { orient: 'right', labelLimit: 110 } },
+        color: { field: 'k', type: 'nominal', title: null, sort: rows.map(r => String(r.k)), scale: { domain: rows.map(r => r.k), range: rows.map((r, i) => r.other ? t.other : kit.colorOf(c, p.field, r.k, i)) }, legend: { orient: 'right', labelLimit: 110 } },
         order: { field: 'v', sort: 'descending' },
         tooltip: [{ field: 'k', type: 'nominal', title: p.field }, { field: 'v', type: 'quantitative', title: kit.L(kit.LABELS.docs), format: ',d' }] } };
   }

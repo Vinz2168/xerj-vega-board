@@ -26,9 +26,9 @@ export default {
     }));
   },
   spec(p, rows, c) {
-    const t = c.theme;
+    const t = c.theme, keys = [...new Map(rows.map(r => [String(r.k), r.k])).values()];   // ordine dei bucket = per conteggio
     const enc = { x: kit.timeX, y: { field: 'y1', type: 'quantitative', title: null, axis: { tickCount: 4 } }, y2: { field: 'y0' },
-      color: { field: 'k', type: 'nominal', title: null, sort: [...new Set(rows.map(r => String(r.k)))], legend: { orient: 'bottom', direction: 'horizontal', columns: 6, labelLimit: 120 } },
+      color: { field: 'k', type: 'nominal', title: null, sort: keys.map(String), scale: { domain: keys, range: keys.map((k, i) => kit.colorOf(c, p.split, k, i)) }, legend: { orient: 'bottom', direction: 'horizontal', columns: 6, labelLimit: 120 } },
       tooltip: [kit.tipTime, { field: 'k', type: 'nominal', title: p.split }, { field: 'v', type: 'quantitative', title: kit.L(kit.LABELS.docs), format: ',d' }] };
     const base = { ...kit.baseSpec(c.height), data: { values: rows }, params: [kit.brushParam(t)] };
     if (p.style === 'area') return { ...base, mark: { type: 'area', interpolate: 'monotone', cursor: 'pointer', opacity: 0.85 }, encoding: enc };

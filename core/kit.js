@@ -19,6 +19,13 @@ export const P = {
   size: (label = { en: 'Rows', it: 'Righe' }, min = 2, max = 25) => ({ key: 'size', label, type: 'number', min, max })
 };
 
+/**
+ * Colore categoriale di un valore. In dashboard viene dalla mappa colori salvata con la dashboard (ctx.color):
+ * stabile tra pannelli, filtri e ricariche, e modificabile dall'editor. Fuori (validatore, anteprime) per posizione `i`.
+ * Ritorna theme.other quando la palette è esaurita: il valore va trattato come "Altro".
+ */
+export const colorOf = (c, field, value, i = 0) => c.color ? c.color(field, value) : c.theme.c[i % c.theme.c.length];
+
 /** Funzioni di metrica per i select: [valore, etichetta localizzata]. */
 export const FN = [['count', { en: 'Document count', it: 'Conteggio documenti' }], ['avg', { en: 'Average', it: 'Media' }], ['sum', { en: 'Sum', it: 'Somma' }], ['max', { en: 'Maximum', it: 'Massimo' }], ['min', { en: 'Minimum', it: 'Minimo' }]];
 export const FN_LABEL = Object.fromEntries([...FN, ['cardinality', { en: 'Distinct values', it: 'Valori distinti' }], ['p50', { en: 'Median', it: 'Mediana' }], ['p95', { en: '95th percentile', it: '95° percentile' }], ['p99', { en: '99th percentile', it: '99° percentile' }]]);

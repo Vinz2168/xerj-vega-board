@@ -26,12 +26,32 @@ body.editing .palette{display:block}
 .panel.drop-before{box-shadow:-4px 0 0 0 var(--accent)}
 .panel.drop-after{box-shadow:4px 0 0 0 var(--accent)}
 .panel.dragging{opacity:.45}
+/* editor: colori dei valori */
+.dcolors{display:grid;gap:10px}
+.dcolors:empty{display:none}
+.clist{display:grid;gap:2px;max-height:300px;overflow:auto}
+.crow{display:flex;align-items:center;gap:8px;padding:3px 0}
+.crow .ck{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:12.5px var(--mono)}
+.crow .cs{display:flex;gap:4px;flex:none}
+.sw{width:20px;height:20px;border-radius:50%;border:2px solid var(--surface);background:var(--sw);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.sw.on{box-shadow:0 0 0 2px var(--fg)}
+.sw:hover{transform:scale(1.12)}
+.dcolors .btn{justify-self:start}
+/* barra dei controlli (widget con control: true) sopra la griglia, come i Controls di Kibana */
+.board{flex:1;min-width:0;display:grid;gap:14px;align-content:start}
+.ctlbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.panel.ctl{flex:0 1 calc(var(--w) / 12 * 100% - 10px);min-width:220px;flex-direction:row;align-items:center;gap:2px;background:transparent;border:0;border-radius:9px}
+.panel.ctl .pb{flex:1;min-width:180px;padding:0}
+.panel.ctl .tools{flex:none}
+.panel.ctl.active{box-shadow:0 0 0 2px var(--accent-soft)}
+.panel.ctl .msg{place-content:start;text-align:left;padding:6px 2px;font-size:12px}
+@media (max-width:760px){.panel.ctl{flex-basis:100%}}
 @media (max-width:1100px){.panel.w3,.panel.w4{grid-column:span 6}.panel.w8{grid-column:span 12}}
 @media (max-width:760px){.panel{grid-column:span 12 !important}}
 .ph{display:flex;align-items:center;gap:8px;padding:10px 12px 0;min-height:36px}
-.ph h3{margin:0;font-size:13px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph h3{margin:0;font-size:13px;font-weight:600;flex:1 1 auto;min-width:min(45%, 9em);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.editing .ph h3{cursor:pointer}
-.ph .meta{font:11px var(--mono);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ph .meta{font:11px var(--mono);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}   /* in poco spazio cede il posto al titolo */
 .grip{display:none;cursor:grab;color:var(--muted);font:14px var(--mono);letter-spacing:-2px;user-select:none}
 .tools{display:none;gap:2px}
 body.editing .grip,body.editing .tools{display:flex}

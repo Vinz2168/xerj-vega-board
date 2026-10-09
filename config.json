@@ -1,6 +1,6 @@
 {
-  "$comment": "Main extension point. Pages and widget manifests load in this order. Page titles may be a string or { en, it }. See AGENTS.md.",
-  "connection": { "mode": "xerj", "url": "http://localhost:8080/es", "key": "" },
+  "$comment": "Main extension point. Pages and widget manifests load in this order. Page titles may be a string or { en, it }. connection: engine = xerj (API token) or elasticsearch/opensearch (username and password); urlEditable: false fixes the URL; showUrl: false hides it (and fixes it); revealPassword: false removes the eye on password/token; demo: false hides the demo data; engineSelectable: true shows the XERJ flag in the login (engine = its default). See AGENTS.md.",
+  "connection": { "engine": "xerj", "engineSelectable": false, "url": "http://localhost:8080/es", "urlEditable": true, "showUrl": true, "revealPassword": true, "demo": true },
   "dashboardIndex": "vega-dashboards",
   "pages": [
     { "id": "dashboard", "title": { "en": "Dashboard", "it": "Dashboard" }, "module": "pages/dashboard/index.js", "css": "pages/dashboard/dashboard.css" },

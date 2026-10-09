@@ -39,6 +39,7 @@ export function validateWidget(w, expectedType) {
   }
   if (w.click) need(typeof w.click === 'function', '"click(params)" must be a function returning the field to filter on');
   if (w.css) need(typeof w.css === 'string', '"css" must be a string');
+  if (w.control != null) need(typeof w.control === 'boolean' && (!w.control || typeof w.render === 'function'), '"control" must be a boolean; a control needs "render" (HTML)');
   return errs;
 }
 

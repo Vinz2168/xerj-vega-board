@@ -26,3 +26,9 @@ Per XERJ: pulsante «Demo» → XERJ → URL del nodo o del proxy (serve CORS ve
 - Verifica: `node tools/validate.mjs`.
 
 Contratti e ricette complete in [AGENTS.md](AGENTS.md).
+
+## Licenza
+
+[Apache License 2.0](LICENSE). Copyright 2026 Vincenzo Lombardo.
+
+Vega, Vega-Lite e vega-embed (BSD-3-Clause) sono caricati dal CDN e non sono inclusi nel repository.

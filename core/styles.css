@@ -125,6 +125,30 @@ select{padding-right:28px}
 .loading::after{content:"";position:absolute;left:12px;right:12px;top:2px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:scan 1s linear infinite}
 @keyframes scan{from{background-position:-40% 0}to{background-position:140% 0}}
 
+/* login: schermata a tutta pagina sopra l'app */
+body.login-open{overflow:hidden}
+.login{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:16px;overflow:auto}
+.lbox{width:min(400px,100%);background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:24px;display:grid;gap:14px}
+.lhead{display:flex;gap:12px;align-items:center}
+.lhead h1{margin:4px 0 0;font-size:20px;font-weight:600}
+.lbox .f input{width:100%}
+.lbox .help{max-width:none}
+.lbox input[readonly]{background:var(--sunk);color:var(--muted)}
+.pw{position:relative}
+.pw input{padding-right:40px}
+.pwtog{position:absolute;right:3px;top:50%;transform:translateY(-50%);width:32px;height:30px;border:0;border-radius:5px;background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center}
+.pwtog:hover,.pwtog[aria-pressed="true"]{color:var(--fg);background:var(--sunk)}
+.switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;justify-self:start;font-weight:500}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch .track{width:36px;height:20px;border-radius:99px;background:var(--line);position:relative;transition:background .15s;flex:none}
+.switch .track::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.switch input:checked+.track{background:var(--accent)}
+.switch input:checked+.track::after{transform:translateX(16px)}
+.switch input:focus-visible+.track{outline:2px solid var(--accent);outline-offset:2px}
+.lsubmit{justify-content:center;width:100%}
+.lfoot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.lfoot .btn:only-child{margin-inline:auto}
+
 /* modale e toast */
 .modal{position:fixed;inset:0;z-index:60;background:rgba(10,14,20,.45);display:grid;place-items:center;padding:16px}
 .mbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);width:min(560px,100%);max-height:calc(100% - 32px);overflow:auto;padding:20px;display:grid;gap:14px}

@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """Serve la board e inoltra /es/* a un nodo XERJ/ES (stessa origine → niente CORS).
 
-Uso: python3 tools/proxy.py [--port 8080] [--root .] [--upstream http://localhost:9200] [--log test-out/proxy.log]
+Uso: python3 tools/proxy.py [--port 8080] [--root .] [--upstream http://localhost:9200] [--insecure] [--log test-out/proxy.log]
 
 - File statici dalla cartella della board, con MIME espliciti (.js/.mjs → text/javascript, .json, .css, .svg).
 - /es/<path>?<query> → <upstream>/<path>?<query>: metodo, body e content-type inoltrati così come sono;
   status, content-type e body della risposta restituiti così come sono (anche 4xx/5xx).
+- Upstream https supportato; --insecure non verifica il certificato (cluster di prova con certificati demo).
+- WWW-Authenticate viene tolto: altrimenti su un 401 il browser apre il suo popup di login sopra quello della board.
 - Ascolta solo su 127.0.0.1. Solo libreria standard.
 """
 import argparse
 import http.client
 import json
 import os
+import ssl
 import sys
 import time
 import urllib.parse
@@ -24,7 +27,7 @@ MIME = {
 HOP = {'connection', 'keep-alive', 'transfer-encoding', 'te', 'trailer', 'upgrade', 'proxy-authorization', 'proxy-authenticate'}
 
 
-def make_handler(root, upstream, logf):
+def make_handler(root, upstream, logf, insecure=False):
     up = urllib.parse.urlsplit(upstream)
 
     class H(SimpleHTTPRequestHandler):
@@ -56,13 +59,17 @@ def make_handler(root, upstream, logf):
             for k in ('Content-Type', 'Authorization', 'Accept'):
                 if self.headers.get(k):
                     headers[k] = self.headers[k]
-            conn = http.client.HTTPConnection(up.hostname, up.port or 80, timeout=120)
+            if up.scheme == 'https':
+                ctx = ssl._create_unverified_context() if insecure else ssl.create_default_context()
+                conn = http.client.HTTPSConnection(up.hostname, up.port or 443, timeout=120, context=ctx)
+            else:
+                conn = http.client.HTTPConnection(up.hostname, up.port or 80, timeout=120)
             try:
                 conn.request(self.command, path, body=body, headers=headers)
                 r = conn.getresponse()
                 data = r.read()
                 status = r.status
-                rh = [(k, v) for k, v in r.getheaders() if k.lower() not in HOP and k.lower() != 'content-length']
+                rh = [(k, v) for k, v in r.getheaders() if k.lower() not in HOP and k.lower() not in ('content-length', 'www-authenticate')]
             except Exception as e:  # upstream giù: 502 esplicito, distinguibile da un errore di XERJ
                 status, rh = 502, [('Content-Type', 'application/json')]
                 data = json.dumps({'error': {'type': 'proxy_error', 'reason': str(e)}}).encode()
@@ -115,10 +122,11 @@ def main():
     ap.add_argument('--port', type=int, default=8080)
     ap.add_argument('--root', default=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     ap.add_argument('--upstream', default='http://localhost:9200')
+    ap.add_argument('--insecure', action='store_true', help='non verificare il certificato TLS dell\'upstream')
     ap.add_argument('--log', default=None)
     a = ap.parse_args()
     logf = open(a.log, 'a') if a.log else None
-    srv = ThreadingHTTPServer(('127.0.0.1', a.port), make_handler(os.path.abspath(a.root), a.upstream, logf))
+    srv = ThreadingHTTPServer(('127.0.0.1', a.port), make_handler(os.path.abspath(a.root), a.upstream, logf, a.insecure))
     print(f'serving {os.path.abspath(a.root)} on http://127.0.0.1:{a.port}  /es/* → {a.upstream}', file=sys.stderr, flush=True)
     srv.serve_forever()
 

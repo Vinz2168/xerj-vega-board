@@ -18,6 +18,6 @@ export default {
     encoding: {
       x: { ...kit.timeX, axis: { ...kit.timeX.axis, grid: false } }, x2: { field: 't2' },
       y: { field: 'k', type: 'nominal', title: null, sort: [...new Set(rows.map(r => r.k))], axis: { ticks: false, domain: false, labelFont: c.theme.mono, labelFontSize: 11, labelLimit: 120 } },
-      color: { field: 'v', type: 'quantitative', title: null, scale: { range: [c.theme.sunk, c.theme.c[0]] }, legend: null },
+      color: { field: 'v', type: 'quantitative', title: null, scale: { range: [c.theme.sunk, c.theme.c[0]], interpolate: 'lab' }, legend: null },
       tooltip: [kit.tipTime, { field: 'k', type: 'nominal', title: p.field }, { field: 'v', type: 'quantitative', title: kit.L(kit.LABELS.docs), format: ',d' }] } })
 };

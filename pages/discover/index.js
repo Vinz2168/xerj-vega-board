@@ -122,7 +122,7 @@ function renderTable() {
     else {
       const f = flat(src); delete f[disc.timefield];
       const hk = Object.keys(h.highlight || {}).filter(x => x in f);
-      cells = `<td class="c"><div class="summary">${[...hk, ...Object.keys(f).filter(x => !hk.includes(x))].map(x => `<span class="kv"><b>${esc(x)}</b>${cell(h, x)}</span>`).join('')}</div></td>`;
+      cells = `<td class="c"><div class="summary">${[...hk, ...Object.keys(f).filter(x => !hk.includes(x))].map(x => { const v = cell(h, x); return `<span class="kv${v.replace(/<[^>]+>/g, '').length <= 40 ? ' nw' : ''}"><b>${esc(x)}</b>${v}</span>`; }).join('')}</div></td>`;
     }
     let out = `<tr class="${mode ? 'open' : ''}"><td><button type="button" class="exp" data-act="exp" data-i="${i}" aria-expanded="${!!mode}" aria-label="${t('disc.details')}">▸</button></td><td class="t">${tcell}</td>${cells}</tr>`;
     if (mode) {
@@ -180,7 +180,7 @@ async function fieldDetails(name) {
   }
 }
 function addFilter(field, value, neg, phrase) {
-  const ex = disc.filters.find(f => f.field === field && String(f.value) === String(value));
+  const ex = disc.filters.find(f => f.field === field && !f.values && String(f.value) === String(value));
   if (ex) { if (!!ex.neg === neg) return; ex.neg = neg; } else disc.filters.push({ field, value, ...(neg ? { neg: true } : {}), ...(phrase ? { phrase: true } : {}) });
   save(); chips.render(); render();
 }

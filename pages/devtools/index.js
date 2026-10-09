@@ -143,7 +143,7 @@ async function curl() {
   const r = current(); if (!r) return;
   const url = (app.backend.isDemo() ? 'http://localhost:9200' : app.backend.conn.url.replace(/\/+$/, '')) + '/' + r.path.replace(/^\/+/, '');
   let cmd = `curl -X ${r.method} "${url}"`;
-  if (app.backend.conn.key && !app.backend.isDemo()) cmd += ` -H "Authorization: ApiKey $XERJ_API_KEY"`;
+  if (app.backend.loggedIn) cmd += app.backend.conn.mode === 'xerj' ? ` -H "Authorization: ApiKey $XERJ_API_KEY"` : ` -u "$ES_USER:$ES_PASSWORD"`;
   if (r.bodyText) {
     let b; try { b = parseBody(r); } catch (e) { app.toast(t('common.badJson', { msg: e.message })); return; }
     const nd = typeof b === 'string';

@@ -52,8 +52,22 @@ python3 -m http.server 8080      # oppure: npx serve .
 # poi http://localhost:8080
 ```
 
-Per collegarsi a XERJ: pulsante «Demo» in alto → XERJ → URL. Serve CORS verso l'origine della pagina
-(o servire la cartella dallo stesso host del proxy).
+All'avvio, se il server richiede credenziali, compare la schermata di accesso. Si configura tutto in
+`config.json → connection`:
+
+| Chiave | Valori | Effetto |
+|---|---|---|
+| `engine` | `xerj`, `elasticsearch`, `opensearch` | XERJ → token API (`Authorization: ApiKey …`); gli altri → utente e password (Basic). |
+| `engineSelectable` | `true`/`false` | `true`: nel login compare il flag XERJ per scegliere; `engine` è la posizione iniziale, poi il browser ricorda l'ultima. |
+| `url` | URL | Server o proxy predefinito. |
+| `urlEditable` | `true`/`false` | `false`: URL fisso, in sola lettura nel login (quello salvato nel browser viene ignorato). |
+| `showUrl` | `true`/`false` | `false`: il campo URL non compare (e l'URL è fisso). |
+| `revealPassword` | `true`/`false` | `false`: niente occhio per vedere provvisoriamente password o token. |
+| `demo` | `true`/`false` | `false`: niente «Usa i dati demo». |
+
+Le credenziali stanno solo in `sessionStorage`; «Esci» in alto le cancella, il pulsante della connessione riapre
+la schermata. Su un 401 la shell torna al login. Serve CORS verso l'origine della pagina, oppure il proxy: `python3 tools/proxy.py --upstream https://… --insecure`
+(stessa origine; toglie `WWW-Authenticate` così il browser non apre il suo popup).
 
 ## Ricette
 
@@ -91,6 +105,8 @@ prendono `init` del widget).
 - Su XERJ: `PUT vega-dashboards/_doc/<id>` con body `{ "title": "…", "updated_at": <epoch ms>, "definition": "<JSON della dashboard come stringa>" }`.
   L'`id` è lo slug del titolo (minuscole, trattini) al primo salvataggio, poi resta fisso: rinominare cambia solo `title`.
   Salvare di nuovo con lo stesso id sovrascrive. Per eliminarla: `DELETE vega-dashboards/_doc/<id>` (dall'interfaccia: «Modifica» → «Elimina»).
+- Colori: `colors: { "<campo>": { "<valore>": 0-5 } }` (posizione nella palette). Facoltativo: se manca si assegna da solo.
+- Filtri di pagina: `{ field, value, neg? }` oppure, per più valori in OR, `{ field, values: [...], neg? }`.
 - Esempi completi: `pages/dashboard/examples.json`.
 
 ### Estendere il motore demo
@@ -118,6 +134,7 @@ e in Dev Tools) se non rispetta il contratto in `core/contract.js`.
 | `spec(p, rows, ctx)` | uno dei due | Spec Vega-Lite con `data: { values: rows }`. |
 | `render(el, p, rows, ctx)` | uno dei due | Alternativa HTML (es. `table`, `search`). |
 | `click(p)` | no | Ritorna il campo da filtrare: un click su un elemento con `datum.k` aggiunge il filtro `campo = k`. Righe con `other: true` non sono cliccabili. |
+| `control` | no | `true` = controllo: va nella barra sopra la griglia (come i Controls di Kibana), senza intestazione né altezza; `w` decide la larghezza, il titolo del pannello è l'etichetta (`ctx.title`). Richiede `render`. Es. `options-list`. |
 | `keepEmpty` | no | `true` = chiama comunque `render`/`spec` con zero risultati. |
 | `css` | no | CSS iniettato una volta. **Prefissa i selettori con `.w-<type>`** e usa solo i token `var(--…)`. |
 
@@ -153,7 +170,12 @@ nome leggibile con `kit.fnLabel(fn)`, etichette comuni in `kit.LABELS` (`docs`, 
 | `rerender()` | Riesegue query e disegno di questo pannello. |
 | `setQuery(text)` | Imposta la query string della pagina. |
 | `addFilter(field, value, neg)` | Aggiunge un filtro di pagina. |
+| `setFilter(field, values, neg)` | Sostituisce i filtri (include o esclude) su un campo: `[]` li toglie, un valore = `term`, più valori = `terms` («è uno di»). |
+| `filterValues(field, neg)` | Valori attualmente filtrati su quel campo (per mostrare la selezione). |
+| `queryWithout(field)` | Come `q` ma senza i filtri di pagina su quel campo: un selettore calcola le sue opzioni senza la propria selezione. |
 | `panelId` | Id del pannello (per id univoci nel DOM). |
+| `color(field, value)` | Colore stabile del valore (usalo tramite `kit.colorOf`). Solo in dashboard. |
+| `title` | Titolo del pannello (per un controllo: l'etichetta; vuoto = scegli tu, es. il nome del campo). |
 
 ### Convenzioni per le spec Vega-Lite
 
@@ -163,6 +185,10 @@ nome leggibile con `kit.fnLabel(fn)`, etichette comuni in `kit.LABELS` (`docs`, 
   Per impilare barre a intervallo calcola `y0`/`y1` in `rows` (vedi `stacked.js`).
 - Per lo zoom temporale aggiungi `params: [kit.brushParam(ctx.theme)]`: la shell ascolta il segnale `brush`.
 - Colori solo da `ctx.theme` (categoriali in `c`, semantici in `ok`/`danger`): così il widget segue tema chiaro/scuro.
+- **Un valore categoriale si colora con `kit.colorOf(ctx, campo, valore, i)`**, non con `theme.c[i]`: in dashboard il colore
+  viene dalla mappa `colors` della dashboard (assegnato alla prima apparizione, stabile con qualsiasi filtro, uguale in tutti
+  i pannelli, modificabile nell'editor → «Colori»); fuori dalla dashboard vale la posizione `i`. Se ritorna `theme.other`
+  la palette è esaurita: trattalo come «Altro». Le scale di intensità (es. heatmap) restano su `theme`.
 - Titoli di assi e tooltip con `kit.L({ en, it })`; i formati numerici d3 (`',.2~f'`) seguono la lingua attiva (virgola decimale in italiano).
 
 ## Lingue
@@ -204,7 +230,7 @@ export default {
 
 | Membro | Uso |
 |---|---|
-| `app.backend` | `msearch([{index, body}])`, `search(index, body)`, `fields(index)`, `indices()`, `request(method, path, body)`, `listDash()`, `saveDash(d)`, `deleteDash(id)`, `isDemo()`. |
+| `app.backend` | `msearch([{index, body}])`, `search(index, body)`, `fields(index)`, `indices()`, `request(method, path, body)`, `listDash()`, `saveDash(d)`, `deleteDash(id)`, `isDemo()`, `conn` (`{ mode: demo/xerj/es, url }`), `loggedIn`. |
 | `app.widgets` | `Map` type → definizione, con `source` uguale a `dist` o `custom`. `app.problems` = widget scartati. |
 | `app.time` | `value`, `range()`, `set(v)`, `back()`, `refresh`, `setRefresh(sec)`. Tempo globale condiviso tra pagine. |
 | `app.on(evt, fn)` | Eventi: `time`, `connection`, `theme`. Ritorna la funzione per disiscriversi. |

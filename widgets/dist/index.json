@@ -7,9 +7,11 @@
     { "type": "stacked", "module": "./stacked.js" },
     { "type": "topn", "module": "./topn.js" },
     { "type": "donut", "module": "./donut.js" },
+    { "type": "double-donut", "module": "./double-donut.js" },
     { "type": "heatmap", "module": "./heatmap.js" },
     { "type": "table", "module": "./table.js" },
     { "type": "search", "module": "./search.js" },
+    { "type": "options-list", "module": "./options-list.js" },
     { "type": "vegalite", "module": "./vegalite.js" }
   ]
 }

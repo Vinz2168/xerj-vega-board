@@ -30,12 +30,14 @@
         <button id="btnProblems" class="btn ghost warnbtn" type="button" hidden><b>!</b><span></span></button>
         <select id="langSel" class="langsel"></select>
         <button id="btnConn" class="btn ghost" type="button"><span class="dot demo" id="connDot"></span><span id="connLbl">Demo</span></button>
+        <button id="btnLogout" class="btn ghost" type="button" hidden><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Log out</span></button>
       </div>
     </div>
     <div id="pagebars"></div>
   </header>
   <main id="pages"></main>
 </div>
+<div class="login" id="login" hidden></div>
 <div class="modal" id="modal" hidden><div class="mbox" role="dialog" aria-modal="true" id="mbox"></div></div>
 <div class="toast" id="toast" hidden></div>
 <script type="module" src="core/app.js"></script>

@@ -47,6 +47,7 @@
 .exp[aria-expanded="true"]{transform:rotate(90deg);color:var(--accent)}
 .summary{max-height:4.6em;overflow:hidden;line-height:1.5;overflow-wrap:anywhere}
 .kv{margin-right:10px}
+.kv.nw{white-space:nowrap}   /* valori brevi interi: «web-1» non va a capo sul trattino */
 .kv b{font-weight:500;background:var(--sunk);border-radius:3px;padding:0 4px;margin-right:4px;color:var(--muted)}
 .ddet>td{padding:10px 14px 16px;background:var(--bg)}
 .dtabs{display:flex;gap:4px;margin-bottom:8px;align-items:center}

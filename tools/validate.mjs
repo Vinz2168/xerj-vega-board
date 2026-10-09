@@ -40,7 +40,8 @@ function runPanel(w, params, h = 'm') {
   const fields = fieldsOf(params.index);
   const c = { tr, fields, height: HEIGHTS[h], panelId: 'validate', theme: THEME, state: {}, rerender() {}, setQuery() {}, addFilter() {},
     iv: pickIv(params.interval, tr, w.target || 40),
-    q: buildQuery({ timefield: params.timefield, tr, state: { query: '', filters: [] }, fields, extra: params.filter }) };
+    q: buildQuery({ timefield: params.timefield, tr, state: { query: '', filters: [] }, fields, extra: params.filter }),
+    queryWithout: () => c.q, filterValues: () => [], setFilter() {} };
   let body;
   try { body = w.query(params, c); JSON.stringify(body); } catch (e) { return 'query(): ' + e.message; }
   const res = demoSearch(params.index, body);

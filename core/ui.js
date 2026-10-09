@@ -3,6 +3,7 @@
 import { $, esc, opts, shortDT, toLocalInput } from './util.js';
 import { RANGES, isAbs } from './time.js';
 import { t, L } from './i18n.js';
+import { filterText } from './query.js';
 
 export const ICON = {
   x: '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
@@ -121,7 +122,7 @@ export function queryBar(el, { placeholder, value, onSubmit }) {
 export function filterChips(el, getFilters, onRemove) {
   el.classList.add('filters');
   const render = () => {
-    el.innerHTML = (getFilters() || []).map((f, i) => `<span class="chip${f.neg ? ' neg' : ''}"><b>${esc(f.field)}</b>${esc(f.value)}<button type="button" data-i="${i}" aria-label="${esc(t('filters.remove', { field: f.field }))}">${ICON.x}</button></span>`).join('');
+    el.innerHTML = (getFilters() || []).map((f, i) => `<span class="chip${f.neg ? ' neg' : ''}"><b>${esc(f.field)}</b>${esc(filterText(f))}<button type="button" data-i="${i}" aria-label="${esc(t('filters.remove', { field: f.field }))}">${ICON.x}</button></span>`).join('');
   };
   el.addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (b) onRemove(+b.dataset.i); });
   render();
@@ -154,18 +155,22 @@ export function paramControl(params, prm, { indices, fields }) {
 }
 
 /** Sceglie un campo plausibile di un certo tipo (per riempire i parametri di un widget appena aggiunto). */
-export function pickField(fields, ft) {
-  const fs = fields.filter(f => f.type === ft); if (!fs.length) return '';
+export function pickField(fields, ft, used = []) {
+  // preferisce un campo non ancora usato da un altro parametro dello stesso widget (es. due anelli, due assi)
+  const all = fields.filter(f => f.type === ft); if (!all.length) return '';
+  const fs = all.filter(f => !used.includes(f.name)).length ? all.filter(f => !used.includes(f.name)) : all;
   if (ft === 'date') return (fs.find(f => f.name === '@timestamp') || fs.find(f => /time|date/i.test(f.name)) || fs[0]).name;
   if (ft === 'keyword') return (fs.find(f => !/(^|_)id$/i.test(f.name) && !f.name.endsWith('.keyword')) || fs[0]).name;
   return fs[0].name;
 }
 /** Completa i parametri field/fields mancanti o non validi rispetto ai campi dell'indice. */
 export function autofill(widget, params, fields) {
+  const used = [];
   for (const prm of widget.params) {
     if (prm.type === 'field') {
       const ft = typeof prm.ftype === 'function' ? prm.ftype(params) : prm.ftype;
-      if (!fields.some(f => f.name === params[prm.key] && f.type === ft)) params[prm.key] = pickField(fields, ft);
+      if (!fields.some(f => f.name === params[prm.key] && f.type === ft)) params[prm.key] = pickField(fields, ft, used);
+      used.push(params[prm.key]);
     } else if (prm.type === 'fields') {
       const ok = (params[prm.key] || []).filter(n => fields.some(f => f.name === n));
       params[prm.key] = ok.length || prm.optional ? ok : fields.filter(f => f.type !== 'text').slice(0, 6).map(f => f.name);
