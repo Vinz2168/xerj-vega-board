@@ -13,3 +13,5 @@ test-out/*
 !test-out/validate-start.txt
 !test-out/validate-end.txt
 .DS_Store
+# permessi locali di Claude Code (personali, non versionati)
+.claude/settings.json
