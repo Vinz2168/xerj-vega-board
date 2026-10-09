@@ -2,7 +2,7 @@
   "name": "xerj-vega-board",
   "private": true,
   "type": "module",
-  "description": "Dashboard, Discover e Dev Tools leggeri per XERJ e motori compatibili Elasticsearch, con widget Vega-Lite modulari.",
+  "description": "Lightweight, extensible Kibana-style UI (Dashboard, Discover, Dev Tools) for XERJ and Elasticsearch-compatible engines, with modular Vega-Lite widgets.",
   "license": "Apache-2.0",
   "scripts": {
     "serve": "python3 -m http.server 8080",
