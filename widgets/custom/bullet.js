@@ -34,7 +34,7 @@ export default {
     const t = c.theme, h = c.height, col = rows[0].ok === false ? t.danger : t.ok;
     const x = { type: 'quantitative', scale: { domain: [0, rows[0].max], nice: false }, axis: null };
     return { ...kit.baseSpec(h), data: { values: rows }, layer: [
-      { mark: { type: 'text', align: 'left', baseline: 'top', x: 0, y: 4, fontSize: Math.round(Math.min(h * 0.26, 30)), fontWeight: 600, font: t.font, color: t.fg }, encoding: { text: { field: 'label' } } },
+      { mark: { type: 'text', align: 'left', baseline: 'top', x: 0, y: 4, fontSize: { expr: `max(12, min(${Math.round(Math.min(h * 0.26, 30))}, width / ${(Math.max(3, String(rows[0].label || '').length) * 0.6).toFixed(2)}))` }, fontWeight: 600, font: t.font, color: t.fg }, encoding: { text: { field: 'label' } } },
       { mark: { type: 'text', align: 'left', baseline: 'top', x: 0, y: Math.round(Math.min(h * 0.26, 30)) + 10, fontSize: 11, font: t.mono, color: col }, encoding: { text: { field: 'verdict' } } },
       { mark: { type: 'bar', color: t.sunk, height: 16, cornerRadius: 3, y: { expr: 'height - 14' } }, encoding: { x: { field: 'max', ...x } } },
       { mark: { type: 'bar', color: col, height: 8, cornerRadius: 2, y: { expr: 'height - 14' } }, encoding: { x: { field: 'v', ...x }, tooltip: [{ field: 'label', title: kit.fnLabel(p.fn) }, { field: 'target', title: kit.L({ en: 'Target', it: 'Obiettivo' }), format: ',.2~f' }] } },

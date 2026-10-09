@@ -24,8 +24,10 @@ export default {
   },
   spec(p, rows, c) {
     const h = c.height, t = c.theme, fs = Math.round(Math.min(h * 0.4, 54));
+    // in un pannello stretto il numero si rimpicciolisce invece di essere tagliato (~0,6 em per carattere)
+    const fit = { expr: `max(12, min(${fs}, (width - 4) / ${(Math.max(3, String(rows[0]?.txt || '').length) * 0.6).toFixed(2)}))` };
     return { ...kit.baseSpec(h), data: { values: rows }, layer: [
-      { mark: { type: 'text', align: 'left', baseline: 'middle', x: 2, y: { expr: 'height*0.42' }, fontSize: fs, fontWeight: 600, font: t.font, color: t.fg }, encoding: { text: { field: 'txt' } } },
+      { mark: { type: 'text', align: 'left', baseline: 'middle', x: 2, y: { expr: 'height*0.42' }, fontSize: fit, fontWeight: 600, font: t.font, color: t.fg }, encoding: { text: { field: 'txt' } } },
       { mark: { type: 'text', align: 'left', baseline: 'top', x: 2, y: { expr: 'height*0.42 + ' + Math.round(fs * 0.62) }, fontSize: 11, font: t.mono, color: t.muted }, encoding: { text: { field: 'sub' } } }] };
   }
 };

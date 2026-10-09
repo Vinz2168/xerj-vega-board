@@ -25,6 +25,18 @@ and any engine with an Elasticsearch-compatible API. Every chart is a modular wi
 
 Tested against XERJ v1.0.0-rc.93 and OpenSearch 3.9 (see [REPORT.md](REPORT.md), in Italian).
 
+## Screenshots
+
+<a href="docs/screenshots/02-options-list.png"><img src="docs/screenshots/02-options-list.png" alt="Options list with two countries selected: the filter chip and every panel update" width="49%"></a>
+<a href="docs/screenshots/03-edit.png"><img src="docs/screenshots/03-edit.png" alt="Edit mode: widget catalogue and the side editor of a double donut" width="49%"></a>
+
+<a href="docs/screenshots/04-discover.png"><img src="docs/screenshots/04-discover.png" alt="Discover: histogram, field list and an expanded document" width="49%"></a>
+<a href="docs/screenshots/05-devtools.png"><img src="docs/screenshots/05-devtools.png" alt="Dev Tools: an aggregation and the response from XERJ" width="49%"></a>
+
+<p align="center"><a href="docs/screenshots/01-dashboard-dark.png"><img src="docs/screenshots/01-dashboard-dark.png" alt="The same dashboard in dark theme" width="49%"></a></p>
+
+*Options list with two values selected · edit mode · Discover · Dev Tools · dark theme. Screenshots taken on XERJ v1.0.0-rc.93 with synthetic data.*
+
 ## Getting started
 
 The board is a folder of static files. It talks to the engine from the browser, so it needs either CORS on the engine or a

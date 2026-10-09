@@ -26,6 +26,18 @@ e per qualsiasi motore con API compatibile Elasticsearch. Ogni grafico è un wid
 
 Provata su XERJ v1.0.0-rc.93 e OpenSearch 3.9 (vedi [REPORT.md](REPORT.md)).
 
+## Immagini
+
+<a href="docs/screenshots/02-options-list.png"><img src="docs/screenshots/02-options-list.png" alt="Elenco opzioni con due paesi selezionati: il chip del filtro e tutti i pannelli si aggiornano" width="49%"></a>
+<a href="docs/screenshots/03-edit.png"><img src="docs/screenshots/03-edit.png" alt="Modalità modifica: catalogo dei widget ed editor laterale di un doppio donut" width="49%"></a>
+
+<a href="docs/screenshots/04-discover.png"><img src="docs/screenshots/04-discover.png" alt="Discover: istogramma, elenco dei campi e un documento espanso" width="49%"></a>
+<a href="docs/screenshots/05-devtools.png"><img src="docs/screenshots/05-devtools.png" alt="Dev Tools: un'aggregazione e la risposta di XERJ" width="49%"></a>
+
+<p align="center"><a href="docs/screenshots/01-dashboard-dark.png"><img src="docs/screenshots/01-dashboard-dark.png" alt="La stessa dashboard in tema scuro" width="49%"></a></p>
+
+*Elenco opzioni con due valori scelti · modalità modifica · Discover · Dev Tools · tema scuro. Immagini fatte su XERJ v1.0.0-rc.93 con dati sintetici.*
+
 ## Avvio
 
 La board è una cartella di file statici. Parla col motore dal browser, quindi serve il CORS sul motore oppure un proxy sulla
