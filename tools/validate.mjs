@@ -17,6 +17,7 @@ import { flattenMapping } from '../core/backend.js';
 import { buildQuery } from '../core/query.js';
 import { pickIv, toRange } from '../core/time.js';
 import { autofill } from '../core/ui.js';
+import { compileDocs } from '../core/registry.js';
 import { CATALOGS, LANGS, isLocalized } from '../core/i18n.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -103,7 +104,24 @@ if (!only) {
 
 /* ---- widget ---- */
 const types = new Map();
-for (const man of config.widgets || []) {
+/** Contratto, traduzioni e una prova sul motore demo (su ax-weblogs, poi ax-orders: basta che uno vada). */
+function checkWidget(w, where, expectedType) {
+  const ce = validateWidget(w, expectedType);
+  if (ce.length) { err(where, ce.join('; ')); return; }
+  types.set(w.type, w);
+  i18nGaps(w).forEach(g => warn(where, g));
+  if (only && w.type !== only) return;
+  const tries = [];
+  for (const index of ['ax-weblogs', 'ax-orders']) {
+    const params = autofill(w, { ...(w.init || {}), index, timefield: '' }, fieldsOf(index));
+    if (w.params.some(p => p.type === 'field' && !params[p.key] && (!p.show || p.show(params)))) { tries.push(index + ': no field of the required type'); continue; }
+    const e = runPanel(w, params, w.defaults?.h);
+    if (!e) { tries.length = 0; break; }
+    tries.push(index + ': ' + e);
+  }
+  if (tries.length) err(where, tries.join(' | ')); else out.ok.push(where);
+}
+for (const man of (config.widgets || []).filter(m => typeof m === 'string')) {
   const manPath = path.join(root, man);
   let m; try { m = JSON.parse(await readFile(manPath, 'utf8')); } catch (e) { err(man, 'manifest not readable: ' + e.message); continue; }
   for (const entry of m.widgets || []) {
@@ -111,23 +129,16 @@ for (const man of config.widgets || []) {
     const file = path.join(path.dirname(manPath), entry.module), where = 'widget ' + entry.type + ' (' + path.relative(root, file) + ')';
     let w;
     try { w = (await import(pathToFileURL(file).href)).default; } catch (e) { err(where, 'import failed: ' + e.message); continue; }
-    const ce = validateWidget(w, entry.type);
-    if (ce.length) { err(where, ce.join('; ')); continue; }
-    types.set(w.type, w);
-    i18nGaps(w).forEach(g => warn(where, g));
-    if (only && w.type !== only) continue;
-    // prova su entrambi gli indici demo: basta che uno vada (alcuni widget servono solo a un tipo di dato)
-    const tries = [];
-    for (const index of ['ax-weblogs', 'ax-orders']) {
-      const params = autofill(w, { ...(w.init || {}), index, timefield: '' }, fieldsOf(index));
-      if (w.params.some(p => p.type === 'field' && !params[p.key] && (!p.show || p.show(params)))) { tries.push(index + ': no field of the required type'); continue; }
-      const e = runPanel(w, params, w.defaults?.h);
-      if (!e) { tries.length = 0; break; }
-      tries.push(index + ': ' + e);
-    }
-    if (tries.length) err(where, tries.join(' | ')); else out.ok.push(where);
+    checkWidget(w, where, entry.type);
   }
 }
+// widget dichiarativi di esempio (quelli che finiscono nell'indice dei widget)
+try {
+  const seed = JSON.parse(await readFile(path.join(root, 'widgets/declarative/seed.json'), 'utf8'));
+  const { widgets: ws, problems } = compileDocs(seed.widgets, 'seed');
+  for (const pr of problems) err('widget ' + pr.type + ' (widgets/declarative/seed.json)', pr.msg);
+  for (const w of ws) checkWidget(w, 'widget ' + w.type + ' (widgets/declarative/seed.json)', w.type);
+} catch (e) { err('widgets/declarative/seed.json', 'not readable: ' + e.message); }
 
 /* ---- dashboard di esempio ---- */
 if (!only) {

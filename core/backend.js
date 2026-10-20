@@ -38,7 +38,7 @@ export function authHeader(c, a) {
   return a.user ? 'Basic ' + b64(a.user + ':' + (a.pass || '')) : null;
 }
 
-export function createBackend({ dashboardIndex = 'vega-dashboards', patternIndex = 'vega-index-patterns', defaultConnection } = {}) {
+export function createBackend({ dashboardIndex = 'vega-dashboards', patternIndex = 'vega-index-patterns', widgetIndex = 'vega-widgets', defaultConnection } = {}) {
   // modalità: demo | xerj | es (qualsiasi motore compatibile ES con utente e password).
   // Tutto da config.json → connection: engine (xerj → token, elasticsearch/opensearch → utente e password),
   // url, urlEditable (false = URL fisso), showUrl (false = campo nascosto, URL fisso), revealPassword (false = niente occhio),
@@ -59,7 +59,7 @@ export function createBackend({ dashboardIndex = 'vega-dashboards', patternIndex
   if (saved?.key) store.set('xvb.conn', conn);   // vecchie versioni salvavano la key nel localStorage
   let indexCache = null, patternCache = null;
   const fieldCache = {};
-  const DEMO_PATTERNS = 'xvb.patterns.demo';
+  const DEMO_PATTERNS = 'xvb.patterns.demo', DEMO_WIDGETS = 'xvb.widgets.demo';
 
   async function http(method, path, body, ct = 'application/json', c = conn, a = auth) {
     const h = {}; if (body != null) h['content-type'] = ct;
@@ -80,6 +80,7 @@ export function createBackend({ dashboardIndex = 'vega-dashboards', patternIndex
     get conn() { return conn; },
     get dashboardIndex() { return dashboardIndex; },
     get patternIndex() { return patternIndex; },
+    get widgetIndex() { return widgetIndex; },
     /** Index pattern (come i data view di Kibana) solo con XERJ e in demo: con Elasticsearch/OpenSearch la board resta quella classica. */
     get patternsEnabled() { return conn.mode !== 'es'; },
     get auth() { return auth; },
@@ -132,7 +133,7 @@ export function createBackend({ dashboardIndex = 'vega-dashboards', patternIndex
         try {
           const pats = (await B.listPatterns().catch(() => [])).map(p => p.title);
           const names = conn.mode === 'demo' ? demoIndices()
-            : (await api('GET', '_cat/indices?format=json&h=index')).map(x => x.index).filter(n => n && !n.startsWith('.') && n !== dashboardIndex && n !== patternIndex).sort();
+            : (await api('GET', '_cat/indices?format=json&h=index')).map(x => x.index).filter(n => n && !n.startsWith('.') && n !== dashboardIndex && n !== patternIndex && n !== widgetIndex).sort();
           indexCache = [...pats, ...names.filter(n => !pats.includes(n))];
         } catch (e) { indexCache = []; throw e; }
       }
@@ -144,7 +145,7 @@ export function createBackend({ dashboardIndex = 'vega-dashboards', patternIndex
     async listPatterns() {
       if (!B.patternsEnabled) return [];
       if (!patternCache) {
-        if (conn.mode === 'demo') patternCache = store.get(DEMO_PATTERNS, [{ id: 'ax-star', title: 'ax-*', timefield: '' }]);
+        if (conn.mode === 'demo') patternCache = store.get(DEMO_PATTERNS, null) ?? [{ id: 'ax-star', title: 'ax-*', timefield: '' }];
         else {
           try {
             const r = await api('POST', patternIndex + '/_search', { size: 500, _source: ['title', 'timefield'] });
@@ -207,13 +208,36 @@ export function createBackend({ dashboardIndex = 'vega-dashboards', patternIndex
       }
       await api('PUT', dashboardIndex + '/_doc/' + encodeURIComponent(d.id) + '?refresh=true', { title: d.title, updated_at: Date.now(), definition: JSON.stringify(d) });
     },
+    /* Widget dichiarativi come documenti (core/declarative.js): { type, source: builtin|user, definition } — solo XERJ e demo.
+       In demo nel browser (null = mai usata, la shell copia gli esempi); su XERJ nell'indice widgetIndex, id = type.
+       La definizione è salvata come stringa JSON, come per le dashboard: il mapping dell'indice resta piccolo e fisso. */
+    async listWidgetDocs() {
+      if (!B.patternsEnabled) return [];
+      if (conn.mode === 'demo') return store.get(DEMO_WIDGETS, null);
+      try {
+        const r = await api('POST', widgetIndex + '/_search', { size: 500, _source: ['source', 'definition'] });
+        return r.hits.hits.map(h => { try { return { ...JSON.parse(h._source.definition), source: h._source.source || 'user' }; } catch (e) { return null; } }).filter(Boolean);
+      } catch (e) { if (e.status === 404) return []; throw e; }
+    },
+    async saveWidgetDoc(d) {
+      const { source = 'user', ...def } = d;
+      if (conn.mode === 'demo') { store.set(DEMO_WIDGETS, [...(store.get(DEMO_WIDGETS, []) || []).filter(x => x.type !== d.type), { ...def, source }]); return; }
+      await api('PUT', widgetIndex + '/_doc/' + encodeURIComponent(d.type) + '?refresh=true', { type: d.type, source, updated_at: Date.now(), definition: JSON.stringify(def) });
+    },
+    async deleteWidgetDoc(type) {
+      if (conn.mode === 'demo') { store.set(DEMO_WIDGETS, (store.get(DEMO_WIDGETS, []) || []).filter(x => x.type !== type)); return; }
+      try { await api('DELETE', widgetIndex + '/_doc/' + encodeURIComponent(type) + '?refresh=true'); } catch (e) { if (e.status !== 404) throw e; }
+    },
+
     /** Elimina una dashboard salvata. Una dashboard mai salvata (404) non è un errore. */
     async deleteDash(id) {
       if (conn.mode === 'demo') { store.set('xvb.dash.demo.v4', store.get('xvb.dash.demo.v4', []).filter(x => x.id !== id)); return; }
       try { await api('DELETE', dashboardIndex + '/_doc/' + encodeURIComponent(id) + '?refresh=true'); }
       catch (e) { if (e.status !== 404) throw e; }
     },
-    seedDemo(list) { store.set('xvb.dash.demo.v4', list); }
+    seedDemo(list) { store.set('xvb.dash.demo.v4', list); },
+    /** Demo: torna allo stato «mai usata» (al prossimo caricamento si ricopiano esempi, pattern e widget). */
+    forgetDemo(what) { const k = { dashboards: 'xvb.dash.demo.v4', patterns: DEMO_PATTERNS, widgets: DEMO_WIDGETS }[what]; if (k) { try { localStorage.removeItem(k); } catch (e) { /* ignorato */ } } B.resetCaches(); }
   };
   return B;
 }

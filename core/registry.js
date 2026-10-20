@@ -4,6 +4,7 @@
 // e segnalato in registry.problems (visibile nella pagina Dev Tools).
 
 import { validateWidget } from './contract.js';
+import { compileWidget } from './declarative.js';
 
 export async function loadWidgets(manifestUrls, base = location.href) {
   const widgets = new Map(), problems = [];
@@ -29,6 +30,23 @@ export async function loadWidgets(manifestUrls, base = location.href) {
         problems.push({ where: entry.module, type: entry.type, msg: 'import failed: ' + e.message });
       }
     }
+  }
+  return { widgets, problems };
+}
+
+/**
+ * Widget dichiarativi (documenti JSON, es. dall'indice dei widget): compilati e validati come gli altri.
+ * Ritorna { widgets: [definizione con source 'index' e origin builtin|user], problems }.
+ */
+export function compileDocs(docs, where = 'index') {
+  const widgets = [], problems = [];
+  for (const d of docs || []) {
+    try {
+      const w = compileWidget(d);
+      const errs = validateWidget(w, d.type);
+      if (errs.length) { problems.push({ where, type: d.type, msg: errs.join('; ') }); continue; }
+      widgets.push({ ...w, source: 'index', origin: d.source || 'user', doc: d });
+    } catch (e) { problems.push({ where, type: d?.type, msg: e.message }); }
   }
   return { widgets, problems };
 }

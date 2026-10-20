@@ -44,8 +44,10 @@ export default {
     document.body.appendChild(el.drawer);
 
     renderPalette(); wireGrid(); wireDrawer(); wireHeader();
+    app.on('widgets', renderPalette);   // widget dell'indice ricaricati (connessione, importazione, ripristino)
     app.on('time', v => { if (syncingTime || !dash || app.activePage !== 'dashboard') return; dash.time = v; dash.refresh = app.time.refresh; markDirty(); });
     app.on('connection', () => loadList());
+    app.on('config', () => loadList());   // Impostazioni: configurazione importata o ripristinata
     let rsT; new ResizeObserver(() => { clearTimeout(rsT); rsT = setTimeout(() => window.dispatchEvent(new Event('resize')), 120); }).observe(el.grid);
     await loadList();
   },
@@ -205,8 +207,8 @@ function renderPalette() {
     const ws = all.filter(w => w.source === src); if (!ws.length) return '';
     return `<h3>${title}</h3><div class="wlist">${ws.map(w => `<button type="button" class="witem" data-add="${esc(w.type)}">${w.icon || ICON.widget}<div><b>${esc(L(w.name))}${w.overrides ? ` <i class="badge">${t('dash.overrides')}</i>` : ''}</b><span>${esc(L(w.desc) || '')}</span></div></button>`).join('')}</div>`;
   };
-  el.palette.innerHTML = `<h2>${t('dash.catalog')}</h2><p class="lead">${t('dash.catalogLead')}</p>` + group('dist', t('dash.standard')) + group('custom', t('dash.custom'));
-  el.palette.addEventListener('click', e => { const b = e.target.closest('[data-add]'); if (b) addPanel(b.dataset.add); });
+  el.palette.innerHTML = `<h2>${t('dash.catalog')}</h2><p class="lead">${t('dash.catalogLead')}</p>` + group('dist', t('dash.standard')) + group('custom', t('dash.custom')) + group('index', t('dash.fromIndex'));
+  el.palette.onclick = e => { const b = e.target.closest('[data-add]'); if (b) addPanel(b.dataset.add); };
 }
 async function addPanel(type) {
   const w = W().get(type), idx = await app.backend.indices().catch(() => []);

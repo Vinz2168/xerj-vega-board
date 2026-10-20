@@ -20,7 +20,8 @@ index.html                 shell HTML: header, slot pagine, script CDN, avvio di
 config.json                pagine (ordine = tab) e manifest dei widget da caricare  ← punto di estensione
 core/
   app.js                   shell: router #/<pagina>, stato globale (tempo, connessione), oggetto `app`
-  registry.js              carica i manifest dei widget, importa i moduli, li valida
+  registry.js              carica i manifest dei widget, importa i moduli, li valida; compila i widget dichiarativi
+  declarative.js           widget dichiarativi: documento JSON → widget (template, percorso delle righe, spec Vega-Lite)
   contract.js              contratti di widget, pagine e dashboard (usato anche da validate.mjs)
   kit.js                   toolkit per i widget: parametri comuni, helper Vega-Lite, formattazione
   backend.js               client XERJ/ES (msearch, mapping, salvataggio dashboard) + switch demo
@@ -44,8 +45,10 @@ pages/
   search/                  index.js, search.css   (solo XERJ e demo)
   indices/                 index.js, indices.css  (solo XERJ e demo)
   corpus/                  index.js, corpus.css   (solo XERJ: Corpus Hub, endpoint /_hub/v1)
+  settings/                index.js, settings.css (XERJ e demo: esporta, importa, ripristina la configurazione)
 widgets/
   dist/                    widget standard + index.json   (non modificarli per personalizzare)
+  declarative/seed.json    widget dichiarativi di esempio (JSON), copiati nell'indice dei widget
   custom/                  widget personalizzati + index.json + _template.js
 schemas/dashboard.schema.json   JSON Schema della definizione di dashboard
 tools/validate.mjs         validazione in Node di pagine, widget e dashboard di esempio
@@ -122,6 +125,40 @@ prendono `init` del widget).
 - Colori: `colors: { "<campo>": { "<valore>": 0-5 } }` (posizione nella palette). Facoltativo: se manca si assegna da solo.
 - Filtri di pagina: `{ field, value, neg? }` oppure, per più valori in OR, `{ field, values: [...], neg? }`.
 - Esempi completi: `pages/dashboard/examples.json`.
+
+### Widget dichiarativi (JSON, anche in un indice)
+
+Con XERJ e in demo un widget può essere un **documento JSON** invece di un modulo JS: si salva nell'indice dei widget
+(`config.json → widgetIndex`, default `vega-widgets`; in demo nel browser) e compare nel catalogo sotto «Dall'indice (JSON)»,
+senza build né file. Stesso `type` di un widget in file = sostituzione. Esempi: `widgets/declarative/seed.json`
+(copiati nell'indice al primo uso in demo e da Impostazioni → Ripristina), compilati da `core/declarative.js`.
+
+```jsonc
+{ "type": "json-terms", "name": { "en": "…", "it": "…" }, "params": [ …come i widget JS… ],
+  "query": { "size": 0, "query": "{{ctx.q}}", "aggs": { "k": { "terms": { "field": "{{field}}", "size": "{{size}}" } } } },
+  "rows":  { "path": ["aggregations.k.buckets"], "map": { "k": "key", "v": "doc_count" } },
+  "spec":  { "mark": "bar", "encoding": { … } },
+  "color": { "param": "split", "row": "k" }, "brush": true, "click": "field" }
+```
+
+- **Template**: `"{{x}}"` da solo mantiene il tipo (numero, oggetto); dentro un testo interpola. Variabili: i parametri,
+  `ctx.q`, `ctx.interval`, `ctx.from`, `ctx.to`, `ctx.height`. Anche le chiavi sono template (`{ "{{fn}}": { "field": … } }`).
+- **Righe**: `path` = un array per livello; nella `map`, `^.` risale di un livello (`"t": "^.key"`). Per un valore solo: `{ "value": "aggregations.m.value" }`.
+- **Spec**: Vega-Lite senza `data` (arrivano le righe); i testi `{ en, it }` dentro la spec si risolvono nella lingua attiva.
+  `color` colora con i colori stabili della dashboard, `brush` collega lo zoom temporale, `click` è il parametro da filtrare.
+- **Solo dati**: niente funzioni, niente `url`/`href`/`$ref`/`loader`/`usermeta` (dati esterni e link), niente `icon` o `css`
+  dal documento. `show` di un parametro è `{ key, eq }` o `{ key, ne }`. Le regole sono in `checkDeclarative`.
+- Su XERJ: `PUT vega-widgets/_doc/<type>` con `{ "type", "source": "user"|"builtin", "updated_at", "definition": "<JSON come stringa>" }`.
+- `node tools/validate.mjs` compila ed esegue anche `seed.json`.
+
+### Esporta, importa, ripristina (pagina Impostazioni)
+
+Un file JSON `{ "format": "xvb-bundle", "version": 1, "exported_at", "engine", "widgets": [], "dashboards": [], "patterns": [], "prefs": {} }`.
+Le credenziali non ci entrano mai. L'importazione valida tutto e mostra un'anteprima (nuovi / sovrascrive / non validi), poi
+per sezione «Unisci» o «Sostituisci». Prima di scrivere, e prima di un ripristino, la board salva un backup
+(`localStorage['xvb.backup.last']`; il ripristino lo scarica anche) e offre «Annulla». Il ripristino su XERJ rimette i widget
+di esempio; in demo anche dashboard e pattern di esempio. Dopo un cambio la pagina emette l'evento `config` (la dashboard
+rilegge l'elenco).
 
 ### Index pattern
 

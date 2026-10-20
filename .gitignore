@@ -16,4 +16,4 @@ test-out/*
 # permessi locali di Claude Code (personali, non versionati)
 .claude/settings.json
 # bozze personali (testi da pubblicare altrove)
-DISCUSSION.md
+DISCUSSION*.md

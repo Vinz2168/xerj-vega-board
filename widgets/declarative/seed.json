@@ -1,0 +1,83 @@
+{
+  "$comment": "Widget dichiarativi di esempio (source: builtin). In demo e su XERJ vengono copiati nell'indice dei widget (config.json → widgetIndex) al primo uso o da Impostazioni → Ripristina. Formato: core/declarative.js e AGENTS.md → «Widget dichiarativi».",
+  "widgets": [
+    {
+      "type": "json-terms",
+      "name": { "en": "Top values (JSON)", "it": "Classifica (JSON)" },
+      "desc": { "en": "Declarative widget: most frequent values", "it": "Widget dichiarativo: valori più frequenti" },
+      "defaults": { "w": 6, "h": "m" },
+      "init": { "size": 8 },
+      "params": [
+        { "key": "index", "label": { "en": "Index", "it": "Indice" }, "type": "index" },
+        { "key": "timefield", "label": { "en": "Time field", "it": "Campo tempo" }, "type": "field", "ftype": "date" },
+        { "key": "field", "label": { "en": "Field", "it": "Campo" }, "type": "field", "ftype": "keyword" },
+        { "key": "size", "label": { "en": "Rows", "it": "Righe" }, "type": "number", "min": 3, "max": 25 }
+      ],
+      "query": { "size": 0, "query": "{{ctx.q}}", "aggs": { "k": { "terms": { "field": "{{field}}", "size": "{{size}}" } } } },
+      "rows": { "path": ["aggregations.k.buckets"], "map": { "k": "key", "v": "doc_count" } },
+      "spec": {
+        "mark": { "type": "bar", "cornerRadiusEnd": 2, "cursor": "pointer" },
+        "encoding": {
+          "y": { "field": "k", "type": "nominal", "sort": "-x", "title": null, "axis": { "labelLimit": 170, "ticks": false, "domain": false } },
+          "x": { "field": "v", "type": "quantitative", "title": null, "axis": { "tickCount": 4 } },
+          "tooltip": [{ "field": "k", "type": "nominal", "title": "{{field}}" }, { "field": "v", "type": "quantitative", "title": { "en": "Documents", "it": "Documenti" }, "format": ",d" }]
+        }
+      },
+      "click": "field"
+    },
+    {
+      "type": "json-split-series",
+      "name": { "en": "Series by category (JSON)", "it": "Serie per categoria (JSON)" },
+      "desc": { "en": "Declarative widget: stacked bars over time", "it": "Widget dichiarativo: barre impilate nel tempo" },
+      "defaults": { "w": 8, "h": "m" },
+      "init": { "size": 5 },
+      "target": 40,
+      "params": [
+        { "key": "index", "label": { "en": "Index", "it": "Indice" }, "type": "index" },
+        { "key": "timefield", "label": { "en": "Time field", "it": "Campo tempo" }, "type": "field", "ftype": "date" },
+        { "key": "split", "label": { "en": "Split by", "it": "Dividi per" }, "type": "field", "ftype": "keyword" },
+        { "key": "size", "label": { "en": "Categories", "it": "Categorie" }, "type": "number", "min": 2, "max": 8 }
+      ],
+      "query": {
+        "size": 0, "query": "{{ctx.q}}",
+        "aggs": { "t": {
+          "date_histogram": { "field": "{{timefield}}", "fixed_interval": "{{ctx.interval}}", "min_doc_count": 0, "extended_bounds": { "min": "{{ctx.from}}", "max": "{{ctx.to}}" } },
+          "aggs": { "s": { "terms": { "field": "{{split}}", "size": "{{size}}" } } } } }
+      },
+      "rows": { "path": ["aggregations.t.buckets", "s.buckets"], "map": { "t": "^.key", "k": "key", "v": "doc_count" } },
+      "spec": {
+        "mark": { "type": "bar", "cursor": "pointer" },
+        "encoding": {
+          "x": { "field": "t", "type": "temporal", "title": null, "axis": { "tickCount": 6, "labelOverlap": true } },
+          "y": { "field": "v", "type": "quantitative", "stack": true, "title": null },
+          "tooltip": [{ "field": "t", "type": "temporal", "format": "%d %b %H:%M", "title": { "en": "From", "it": "Da" } }, { "field": "k", "type": "nominal", "title": "{{split}}" }, { "field": "v", "type": "quantitative", "format": ",d", "title": { "en": "Documents", "it": "Documenti" } }]
+        }
+      },
+      "color": { "param": "split", "row": "k" },
+      "brush": true,
+      "click": "split"
+    },
+    {
+      "type": "json-stat",
+      "name": { "en": "Statistic (JSON)", "it": "Statistica (JSON)" },
+      "desc": { "en": "Declarative widget: one aggregate of a numeric field", "it": "Widget dichiarativo: un aggregato di un campo numerico" },
+      "defaults": { "w": 3, "h": "s" },
+      "init": { "fn": "avg" },
+      "params": [
+        { "key": "index", "label": { "en": "Index", "it": "Indice" }, "type": "index" },
+        { "key": "timefield", "label": { "en": "Time field", "it": "Campo tempo" }, "type": "field", "ftype": "date" },
+        { "key": "fn", "label": { "en": "Function", "it": "Funzione" }, "type": "select", "options": [["avg", { "en": "Average", "it": "Media" }], ["sum", { "en": "Sum", "it": "Somma" }], ["max", { "en": "Maximum", "it": "Massimo" }], ["min", { "en": "Minimum", "it": "Minimo" }]] },
+        { "key": "mfield", "label": { "en": "Numeric field", "it": "Campo numerico" }, "type": "field", "ftype": "number" },
+        { "key": "unit", "label": { "en": "Unit", "it": "Unità" }, "type": "text", "placeholder": "ms, €, B…" }
+      ],
+      "query": { "size": 0, "query": "{{ctx.q}}", "aggs": { "m": { "{{fn}}": { "field": "{{mfield}}" } } } },
+      "rows": { "value": "aggregations.m.value" },
+      "spec": {
+        "mark": { "type": "text", "fontSize": 30, "limit": 400, "fontWeight": 600, "align": "left", "baseline": "middle", "x": 4 },
+        "encoding": { "text": { "field": "label", "type": "nominal" } },
+        "transform": [{ "calculate": "datum.v == null ? '—' : format(datum.v, ',.1~f') + ' {{unit}}'", "as": "label" }],
+        "view": { "stroke": null }
+      }
+    }
+  ]
+}

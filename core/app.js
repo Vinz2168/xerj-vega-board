@@ -4,7 +4,7 @@
 import { $, esc, store } from './util.js';
 import { toRange, isAbs } from './time.js';
 import { createBackend } from './backend.js';
-import { loadWidgets } from './registry.js';
+import { loadWidgets, compileDocs } from './registry.js';
 import { validatePage } from './contract.js';
 import { setLocale, setBrushHandler } from './vega.js';
 import { toast, modal } from './ui.js';
@@ -18,6 +18,7 @@ const PAGE_ICONS = {
   search: svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'),
   discover: svg('<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>'),
   corpus: svg('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>'),
+  settings: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
   indices: svg('<ellipse cx="12" cy="5.5" rx="7.5" ry="2.5"/><path d="M4.5 5.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6"/><path d="M4.5 11.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6"/>'),
   devtools: svg('<path d="M8 8l-4 4 4 4"/><path d="M16 8l4 4-4 4"/><path d="M13.5 5l-3 14"/>'),
   page: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>')
@@ -34,8 +35,9 @@ async function boot() {
   setLocale();
   const config = await (await fetch(new URL('../config.json', import.meta.url))).json();
   const base = new URL('../', import.meta.url).href;
-  const backend = createBackend({ dashboardIndex: config.dashboardIndex, patternIndex: config.patternIndex, defaultConnection: config.connection });
-  const { widgets, problems } = await loadWidgets(config.widgets || [], base);
+  const backend = createBackend({ dashboardIndex: config.dashboardIndex, patternIndex: config.patternIndex, widgetIndex: config.widgetIndex, defaultConnection: config.connection });
+  const { widgets, problems } = await loadWidgets((config.widgets || []).filter(m => typeof m === 'string'), base);
+  const fileWidgets = new Map(widgets), fileProblems = [...problems];
 
   const saved = store.get('xvb.time', { value: '7d', refresh: 0 });
   let timeValue = saved.value, refresh = saved.refresh, hist = [], rfTimer = null;
@@ -68,7 +70,24 @@ async function boot() {
       const t = $('#pageTitle'); t.value = text || ''; t.readOnly = !editable; t.classList.toggle('editable', editable);
       t.oninput = editable && onInput ? () => onInput(t.value) : null;
     },
-    refreshActive: () => refreshActive()
+    refreshActive: () => refreshActive(),
+    /** Ricarica i widget dell'indice (dichiarativi) sopra quelli in file; in demo, al primo uso, copia gli esempi. */
+    async reloadWidgets() {
+      let docs = [];
+      try {
+        docs = await backend.listWidgetDocs();
+        if (docs == null) {   // demo mai usata
+          docs = (await (await fetch(new URL('widgets/declarative/seed.json', base))).json()).widgets.map(d => ({ ...d, source: 'builtin' }));
+          for (const d of docs) await backend.saveWidgetDoc(d);
+        }
+      } catch (e) { console.warn('widget index not readable:', e.message); docs = []; }
+      const res = compileDocs(docs, backend.widgetIndex);
+      widgets.clear(); for (const [k, v] of fileWidgets) widgets.set(k, v);
+      for (const w of res.widgets) widgets.set(w.type, { ...w, overrides: fileWidgets.has(w.type) });
+      problems.length = 0; problems.push(...fileProblems, ...res.problems);
+      paintProblems();
+      app.emit('widgets');
+    }
   };
   const persistTime = () => store.set('xvb.time', { value: timeValue, refresh });
   function armRefresh() {
@@ -241,9 +260,13 @@ async function boot() {
     refreshActive();
   });
 
-  /* ---- problemi del registry ---- */
-  if (problems.length) {
-    const b = $('#btnProblems'); b.hidden = false; b.querySelector('span').textContent = problems.length;
+  /* ---- problemi del registry (anche dei widget dell'indice: si ridipinge a ogni reloadWidgets) ---- */
+  function paintProblems() {
+    const b = $('#btnProblems'); b.hidden = !problems.length; b.querySelector('span').textContent = problems.length;
+  }
+  paintProblems();
+  {
+    const b = $('#btnProblems');
     b.addEventListener('click', () => modal.open(`<h2>${t('problems.title')}</h2><p>${t('problems.help')}</p>
       <ul class="plist">${problems.map(p => `<li><code>${esc(p.where)}</code>${p.type ? ` · <b>${esc(p.type)}</b>` : ''}<br><span>${esc(p.msg)}</span></li>`).join('')}</ul>
       <div class="mrow"><button type="button" class="btn" data-close>${t('common.close')}</button></div>`));
@@ -318,6 +341,8 @@ async function boot() {
 
   window.xvb = app; // comodo da console e per gli agent che ispezionano la pagina
   await ensureLogin();
+  await app.reloadWidgets();
+  app.on('connection', () => app.reloadWidgets().then(() => refreshActive()));
   const first = location.hash.replace(/^#\/?/, '');
   await show(pages.has(first) ? first : config.pages[0].id);
 }
