@@ -6,8 +6,11 @@
 <title>XERJ Vega Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="core/styles.css">
+<link rel="stylesheet" href="core/skins/nova.css">
+<!-- stile (classic/nova; con Elasticsearch/OpenSearch sempre classic) e tema forzato dal browser: applicati prima del primo disegno per evitare il lampo; la shell li gestisce poi in core/app.js -->
+<script>try{var d=document.documentElement,t=localStorage.getItem('xvb.theme'),k=localStorage.getItem('xvb.skin'),c=JSON.parse(localStorage.getItem('xvb.conn')||'{}');if(t==='dark'||t==='light')d.dataset.theme=t;if(k&&c.mode!=='es')d.dataset.skin=k}catch(e){}</script>
 <!-- Vega is loaded as a global: widgets never import it, the shell uses it through core/vega.js -->
 <script src="https://cdn.jsdelivr.net/npm/vega@5.30.0/build/vega.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.21.0/build/vega-lite.min.js"></script>
@@ -28,6 +31,8 @@
       <nav class="tabs" id="nav" role="tablist" aria-label="Pages"></nav>
       <div class="actions">
         <button id="btnProblems" class="btn ghost warnbtn" type="button" hidden><b>!</b><span></span></button>
+        <select id="skinSel" class="langsel"></select>
+        <button id="btnTheme" class="btn ghost" type="button"></button>
         <select id="langSel" class="langsel"></select>
         <button id="btnConn" class="btn ghost" type="button"><span class="dot demo" id="connDot"></span><span id="connLbl">Demo</span></button>
         <button id="btnLogout" class="btn ghost" type="button" hidden><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Log out</span></button>

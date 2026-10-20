@@ -1,6 +1,6 @@
 // Accesso ai dati: XERJ (o qualsiasi endpoint compatibile Elasticsearch) oppure la demo nel browser.
 
-import { store } from './util.js';
+import { store, slug } from './util.js';
 import { demoSearch, demoIndices, demoMapping, demoRoute } from './demo/engine.js';
 
 /** Tipo logico di un campo del mapping. */
@@ -38,7 +38,7 @@ export function authHeader(c, a) {
   return a.user ? 'Basic ' + b64(a.user + ':' + (a.pass || '')) : null;
 }
 
-export function createBackend({ dashboardIndex = 'vega-dashboards', defaultConnection } = {}) {
+export function createBackend({ dashboardIndex = 'vega-dashboards', patternIndex = 'vega-index-patterns', defaultConnection } = {}) {
   // modalità: demo | xerj | es (qualsiasi motore compatibile ES con utente e password).
   // Tutto da config.json → connection: engine (xerj → token, elasticsearch/opensearch → utente e password),
   // url, urlEditable (false = URL fisso), showUrl (false = campo nascosto, URL fisso), revealPassword (false = niente occhio),
@@ -57,8 +57,9 @@ export function createBackend({ dashboardIndex = 'vega-dashboards', defaultConne
   };
   let auth = session.get() || (saved?.key || def.key ? { key: saved?.key || def.key } : null);
   if (saved?.key) store.set('xvb.conn', conn);   // vecchie versioni salvavano la key nel localStorage
-  let indexCache = null;
+  let indexCache = null, patternCache = null;
   const fieldCache = {};
+  const DEMO_PATTERNS = 'xvb.patterns.demo';
 
   async function http(method, path, body, ct = 'application/json', c = conn, a = auth) {
     const h = {}; if (body != null) h['content-type'] = ct;
@@ -78,6 +79,9 @@ export function createBackend({ dashboardIndex = 'vega-dashboards', defaultConne
   const B = {
     get conn() { return conn; },
     get dashboardIndex() { return dashboardIndex; },
+    get patternIndex() { return patternIndex; },
+    /** Index pattern (come i data view di Kibana) solo con XERJ e in demo: con Elasticsearch/OpenSearch la board resta quella classica. */
+    get patternsEnabled() { return conn.mode !== 'es'; },
     get auth() { return auth; },
     get loggedIn() { return !!authHeader(conn, auth); },
     isDemo: () => conn.mode === 'demo',
@@ -105,7 +109,7 @@ export function createBackend({ dashboardIndex = 'vega-dashboards', defaultConne
     },
     /** Chiamato su una risposta 401 della connessione corrente (la shell mostra il login). */
     onUnauthorized: null,
-    resetCaches() { indexCache = null; for (const k in fieldCache) delete fieldCache[k]; },
+    resetCaches() { indexCache = null; patternCache = null; for (const k in fieldCache) delete fieldCache[k]; },
 
     /** Richiesta grezza (Dev Tools). Ritorna {status, ok, body, ms, size}; non lancia per errori HTTP. */
     async request(method, path, body) {
@@ -122,14 +126,48 @@ export function createBackend({ dashboardIndex = 'vega-dashboards', defaultConne
       return http(method, path, body == null ? null : (nd ? body : body), nd ? 'application/x-ndjson' : 'application/json');
     },
     async ping() { return B.probe(conn, auth); },
+    /** Indici (e, prima, gli index pattern salvati) per i selettori di indice. */
     async indices() {
       if (!indexCache) {
         try {
-          indexCache = conn.mode === 'demo' ? demoIndices()
-            : (await api('GET', '_cat/indices?format=json&h=index')).map(x => x.index).filter(n => n && !n.startsWith('.') && n !== dashboardIndex).sort();
+          const pats = (await B.listPatterns().catch(() => [])).map(p => p.title);
+          const names = conn.mode === 'demo' ? demoIndices()
+            : (await api('GET', '_cat/indices?format=json&h=index')).map(x => x.index).filter(n => n && !n.startsWith('.') && n !== dashboardIndex && n !== patternIndex).sort();
+          indexCache = [...pats, ...names.filter(n => !pats.includes(n))];
         } catch (e) { indexCache = []; throw e; }
       }
       return indexCache;
+    },
+
+    /* Index pattern: { id, title: 'ax-*', timefield: '' | campo data }. In demo nel browser, su XERJ nell'indice patternIndex
+       (id = slug del titolo). Il campo tempo del pattern diventa quello proposto dai form (campo con primary: true in fields()). */
+    async listPatterns() {
+      if (!B.patternsEnabled) return [];
+      if (!patternCache) {
+        if (conn.mode === 'demo') patternCache = store.get(DEMO_PATTERNS, [{ id: 'ax-star', title: 'ax-*', timefield: '' }]);
+        else {
+          try {
+            const r = await api('POST', patternIndex + '/_search', { size: 500, _source: ['title', 'timefield'] });
+            patternCache = r.hits.hits.map(h => ({ id: h._id, title: h._source.title, timefield: h._source.timefield || '' }));
+          } catch (e) { if (e.status === 404) patternCache = []; else throw e; }
+        }
+        patternCache.sort((a, b) => a.title.localeCompare(b.title));
+      }
+      return patternCache;
+    },
+    async savePattern(p) {
+      // id = slug del titolo, con «*» scritto per esteso (ax-* e ax* restano distinti); a parità di slug un suffisso
+      const all = await B.listPatterns(), base = slug(p.title.replace(/\*/g, ' star '));
+      let id = p.id || base; for (let n = 2; !p.id && all.some(x => x.id === id && x.title !== p.title); n++) id = base + '-' + n;
+      const d = { id, title: p.title, timefield: p.timefield || '' };
+      if (conn.mode === 'demo') store.set(DEMO_PATTERNS, [...all.filter(x => x.id !== d.id), d]);
+      else await api('PUT', patternIndex + '/_doc/' + encodeURIComponent(d.id) + '?refresh=true', { title: d.title, timefield: d.timefield, updated_at: Date.now() });
+      B.resetCaches(); return d;
+    },
+    async deletePattern(id) {
+      if (conn.mode === 'demo') store.set(DEMO_PATTERNS, (await B.listPatterns()).filter(x => x.id !== id));
+      else { try { await api('DELETE', patternIndex + '/_doc/' + encodeURIComponent(id) + '?refresh=true'); } catch (e) { if (e.status !== 404) throw e; } }
+      B.resetCaches();
     },
     /** Campi dell'indice (o pattern), in cache. Non lancia: in caso di errore ritorna []. */
     async fields(index) {
@@ -139,7 +177,8 @@ export function createBackend({ dashboardIndex = 'vega-dashboards', defaultConne
           const r = conn.mode === 'demo' ? demoMapping(index) : await api('GET', encodeURIComponent(index) + '/_mapping');
           const seen = new Map();
           for (const m of Object.values(r)) for (const f of flattenMapping(m.mappings?.properties)) if (!seen.has(f.name)) seen.set(f.name, f);
-          fieldCache[index] = [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
+          const tf = (await B.listPatterns().catch(() => [])).find(p => p.title === index)?.timefield;
+          fieldCache[index] = [...seen.values()].sort((a, b) => a.name.localeCompare(b.name)).map(f => f.name === tf && f.type === 'date' ? { ...f, primary: true } : f);
         } catch (e) { fieldCache[index] = []; }
       }
       return fieldCache[index];

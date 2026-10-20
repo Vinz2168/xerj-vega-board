@@ -1,0 +1,120 @@
+/* Stile «nova»: sidebar a sinistra, blu notte con accento indaco, card con bordo luminoso.
+   Si attiva con <html data-skin="nova"> (config.json → skin, o il selettore nella sidebar); lo stile classico resta in
+   core/styles.css. Qui si ridefiniscono i token e si sovrascrivono solo forma e impaginazione: pagine e widget
+   continuano a usare var(--…) e ctx.theme e seguono lo stile senza modifiche. */
+:root[data-skin="nova"]{
+  --bg:#F3F5FB; --surface:#FFFFFF; --sunk:#E9ECF6; --fg:#121735; --muted:#5D6587; --line:#DCE1EF;
+  --accent:#4F55E8; --accent-ink:#FFFFFF; --accent-soft:#E5E7FF; --danger:#C2253A; --danger-soft:#FCE4E8;
+  --ok:#14915A; --warn:#B26A00;
+  --c1:#4F55E8; --c2:#0A84C6; --c3:#8B4FE0; --c4:#D0397E; --c5:#C27A0E; --c6:#11936A; --c-other:#A3AAC2;
+  --side:#FFFFFF; --side-line:#E2E6F2; --glow:rgba(79,85,232,.28);
+  --accent-grad:linear-gradient(135deg,#5B63F5,#4048DA);
+  --shadow:0 1px 2px rgba(18,23,53,.05),0 10px 30px -12px rgba(18,23,53,.14);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --r:14px; --sw:248px;
+}
+@media (prefers-color-scheme: dark){:root[data-skin="nova"]:not([data-theme="light"]){
+  --bg:#070B1A; --surface:#0E1430; --sunk:#151D3D; --fg:#E6E9FA; --muted:#8B93B8; --line:#1F2A52;
+  --accent:#7C86FF; --accent-ink:#FFFFFF; --accent-soft:#232B66; --danger:#FF7A8A; --danger-soft:#3A1528;
+  --ok:#3DD68C; --warn:#F5B94A;
+  --c1:#7C86FF; --c2:#38BDF8; --c3:#B38CFF; --c4:#F472B6; --c5:#FBBF24; --c6:#34D399; --c-other:#4B557D;
+  --side:#0A0F24; --side-line:#18214A; --glow:rgba(110,120,255,.45);
+  --accent-grad:linear-gradient(135deg,#6470FF,#4A4FE6);
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 14px 40px -18px rgba(0,0,0,.8); color-scheme:dark}}
+:root[data-skin="nova"][data-theme="dark"]{
+  --bg:#070B1A; --surface:#0E1430; --sunk:#151D3D; --fg:#E6E9FA; --muted:#8B93B8; --line:#1F2A52;
+  --accent:#7C86FF; --accent-ink:#FFFFFF; --accent-soft:#232B66; --danger:#FF7A8A; --danger-soft:#3A1528;
+  --ok:#3DD68C; --warn:#F5B94A;
+  --c1:#7C86FF; --c2:#38BDF8; --c3:#B38CFF; --c4:#F472B6; --c5:#FBBF24; --c6:#34D399; --c-other:#4B557D;
+  --side:#0A0F24; --side-line:#18214A; --glow:rgba(110,120,255,.45);
+  --accent-grad:linear-gradient(135deg,#6470FF,#4A4FE6);
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 14px 40px -18px rgba(0,0,0,.8); color-scheme:dark}
+
+[data-skin="nova"] body{background:radial-gradient(1200px 600px at 85% -10%,color-mix(in srgb,var(--accent) 9%,transparent),transparent 70%),var(--bg);background-attachment:fixed;-webkit-font-smoothing:antialiased}
+
+/* sidebar */
+[data-skin="nova"] .side{display:flex;flex-direction:column;gap:18px;position:fixed;inset:0 auto 0 0;width:var(--sw);z-index:25;background:var(--side);border-right:1px solid var(--side-line);padding:calc(18px + env(safe-area-inset-top,0px)) 14px calc(16px + env(safe-area-inset-bottom,0px));overflow-y:auto}
+[data-skin="nova"] .sbrand{display:flex;align-items:center;gap:12px;padding:4px 6px 6px}
+[data-skin="nova"] .sbrand b{display:block;font-size:22px;font-weight:700;letter-spacing:.02em;line-height:1.1}
+[data-skin="nova"] .sbrand span{display:block;font-size:12px;color:var(--muted)}
+[data-skin="nova"] .glyph{width:38px;height:38px;border-radius:0;background:none;padding:0;display:block;position:relative;flex:none;filter:drop-shadow(0 0 10px var(--glow))}
+[data-skin="nova"] .glyph i{display:none}
+[data-skin="nova"] .glyph::before,[data-skin="nova"] .glyph::after{content:"";position:absolute;left:50%;top:50%;width:46px;height:9px;border-radius:5px;background:linear-gradient(90deg,#3B82F6,#6366F1 55%,#8B5CF6)}
+[data-skin="nova"] .glyph::before{transform:translate(-50%,-50%) rotate(45deg)}
+[data-skin="nova"] .glyph::after{transform:translate(-50%,-50%) rotate(-45deg);background:linear-gradient(90deg,#60A5FA,#3B82F6 50%,#4F46E5)}
+[data-skin="nova"] .snav{flex:1}
+[data-skin="nova"] .tabs{display:flex;flex-direction:column;gap:4px;border:0;padding:0;background:transparent;border-radius:0;overflow:visible}
+[data-skin="nova"] .tabs button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 14px;border-radius:10px;border:1px solid transparent;font-size:14.5px;color:var(--muted);transition:background .15s,color .15s}
+[data-skin="nova"] .tabs button svg{display:block;flex:none}
+[data-skin="nova"] .tabs button:hover{color:var(--fg);background:var(--sunk)}
+[data-skin="nova"] .tabs button[aria-selected="true"]{color:var(--fg);background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 26%,transparent),color-mix(in srgb,var(--accent) 10%,transparent));border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:inset 3px 0 0 var(--accent)}
+[data-skin="nova"] .tabs button[aria-selected="true"] svg{color:var(--accent)}
+[data-skin="nova"] .sfoot{display:grid;gap:8px;border:1px solid var(--side-line);border-radius:12px;padding:10px;background:color-mix(in srgb,var(--surface) 60%,transparent)}
+[data-skin="nova"] .sfoot .langsel,[data-skin="nova"] .sfoot .btn{width:100%;max-width:none}
+[data-skin="nova"] #btnTheme{justify-content:flex-start;padding:0 10px}
+[data-skin="nova"] #btnTheme span{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+
+/* contenuto a destra della sidebar */
+[data-skin="nova"] .app{padding-left:calc(var(--sw) + 24px);padding-right:24px;max-width:none}
+[data-skin="nova"] body.drawer-open .app{padding-right:calc(var(--drawer) + 24px)}
+[data-skin="nova"] .top{background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom-color:var(--line);padding-block:14px 12px}
+[data-skin="nova"] .row1>.brand>.glyph{display:none}
+[data-skin="nova"] .eyebrow{font:500 12px/1 var(--sans);letter-spacing:0;text-transform:none;color:var(--accent)}
+[data-skin="nova"] .top .eyebrow::after{content:"  ›";color:var(--muted)}
+[data-skin="nova"] .ptitle{font-size:22px;font-weight:600;letter-spacing:-.01em}
+
+/* controlli */
+[data-skin="nova"] select,[data-skin="nova"] input[type=text],[data-skin="nova"] input[type=number],[data-skin="nova"] input[type=password],[data-skin="nova"] input[type=url],[data-skin="nova"] input[type=search],[data-skin="nova"] textarea{border-radius:10px;background:var(--surface);transition:border-color .15s,box-shadow .15s}
+[data-skin="nova"] :is(input,select,textarea):focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+[data-skin="nova"] .btn{border-radius:10px;min-height:38px;background:var(--surface)}
+[data-skin="nova"] .btn.ghost{background:transparent}
+[data-skin="nova"] .btn:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+[data-skin="nova"] .btn.primary{background:var(--accent-grad);border-color:transparent;color:var(--accent-ink);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 60%,transparent),0 8px 22px -8px var(--glow)}
+[data-skin="nova"] .btn.primary:hover{filter:brightness(1.08)}
+[data-skin="nova"] .btn.primary:disabled{background:var(--sunk);border-color:var(--line);color:var(--muted);box-shadow:none;filter:none}
+[data-skin="nova"] .btn.on{background:var(--accent-soft);color:var(--fg);border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
+[data-skin="nova"] .btn.conn{border-color:var(--line);background:var(--surface);border-radius:99px}
+[data-skin="nova"] .btn .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+[data-skin="nova"] .btn .dot.demo{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+[data-skin="nova"] .qwrap input{border-radius:12px 0 0 12px;min-height:42px;font-size:13.5px}
+[data-skin="nova"] .qwrap .btn{border-radius:0 12px 12px 0;min-height:42px}
+[data-skin="nova"] .chip{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+[data-skin="nova"] .chip.neg{border-color:color-mix(in srgb,var(--danger) 35%,transparent)}
+[data-skin="nova"] .presets button{border-radius:9px}
+[data-skin="nova"] .presets button[aria-pressed="true"]{background:var(--accent-grad);border-color:transparent}
+[data-skin="nova"] .tpop,[data-skin="nova"] .mbox,[data-skin="nova"] .lbox{border-radius:16px;border-color:color-mix(in srgb,var(--accent) 22%,var(--line))}
+[data-skin="nova"] .modal{background:rgba(4,7,20,.6);backdrop-filter:blur(4px)}
+[data-skin="nova"] .toast{border-radius:12px;background:var(--surface);color:var(--fg);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line))}
+
+/* card: pannelli, Discover e Dev Tools */
+[data-skin="nova"] :is(.panel:not(.ctl),.dmain,.dside,.dvcard,.palette){background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 4%,var(--surface)),var(--surface));border-color:color-mix(in srgb,var(--accent) 14%,var(--line));box-shadow:var(--shadow)}
+[data-skin="nova"] .panel.active{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent),0 10px 30px -12px var(--glow)}
+[data-skin="nova"] .ph{padding:14px 16px 0}
+[data-skin="nova"] .ph h3{font-size:14px}
+[data-skin="nova"] .pb{padding:10px 16px 16px}
+[data-skin="nova"] .grid,[data-skin="nova"] .board{gap:16px}
+[data-skin="nova"] .witem{border-radius:10px;background:var(--surface)}
+[data-skin="nova"] .dtabs button{border-radius:8px}
+[data-skin="nova"] .dtabs button[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+[data-skin="nova"] .drawer{background:var(--side);border-left-color:var(--side-line)}
+[data-skin="nova"] .login{background:radial-gradient(900px 500px at 50% 0%,color-mix(in srgb,var(--accent) 14%,transparent),transparent 70%),var(--bg)}
+[data-skin="nova"] .lhead .glyph{margin:0 6px}
+
+/* schermi stretti: la sidebar diventa una barra in alto con la navigazione scorrevole */
+@media (max-width:900px){
+  [data-skin="nova"] .side{position:static;width:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px;border-right:0;border-bottom:1px solid var(--side-line);padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;overflow:visible}
+  [data-skin="nova"] .sbrand{padding:0}
+  [data-skin="nova"] .sbrand b{font-size:17px}
+  [data-skin="nova"] .glyph{width:28px;height:28px}
+  [data-skin="nova"] .glyph::before,[data-skin="nova"] .glyph::after{width:34px;height:7px}
+  [data-skin="nova"] .snav{order:3;flex:1 1 100%;min-width:0}
+  [data-skin="nova"] .tabs{flex-direction:row;overflow-x:auto}
+  [data-skin="nova"] .tabs button{width:auto;padding:8px 12px;font-size:13.5px}
+  [data-skin="nova"] .sfoot{margin-left:auto;display:flex;padding:0;border:0;background:transparent}
+  [data-skin="nova"] .sfoot .langsel{width:auto;max-width:140px}
+  [data-skin="nova"] .sfoot .btn{width:auto}
+  [data-skin="nova"] #btnTheme span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  [data-skin="nova"] .app{padding-inline:16px}
+  [data-skin="nova"] body.drawer-open .app{padding-right:16px}
+}

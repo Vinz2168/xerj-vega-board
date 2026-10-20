@@ -6,6 +6,8 @@ Leggi tutto prima della prima modifica: il progetto è piccolo, ma ha contratti 
 ## In breve
 
 - Interfaccia leggera per XERJ e per qualsiasi motore con API Elasticsearch: **Dashboard**, **Discover**, **Dev Tools**.
+  Con XERJ (e in demo) anche **Ricerca** (codice e documenti di `xerj autoindex`) e **Indici** (mapping, impostazioni, index pattern);
+  con Elasticsearch/OpenSearch la board resta quella classica.
 - **Niente build.** ES modules nativi, serviti così come sono. Vega, Vega-Lite e vega-embed arrivano da CDN come globali (`index.html`).
 - **Tutto si estende aggiungendo file e una riga in un manifest.** Non serve toccare il core per aggiungere un widget o una pagina.
 - Interfaccia **bilingue** (inglese di default, italiano se il browser lo preferisce): vedi «Lingue». I messaggi diagnostici per sviluppatori (contratto, validatore, motore demo) sono in inglese.
@@ -29,13 +31,18 @@ core/
   util.js                  utilità pure (escape, formattazione numeri/date, localStorage tollerante)
   i18n.js                  lingua dal browser, t('chiave') per il core, L({ en, it }) per i widget
   i18n/en.js, i18n/it.js   cataloghi delle stringhe del core (stesse chiavi)
-  styles.css               token di colore e stili condivisi
-  demo/data.js             dati sintetici (ax-weblogs, ax-orders)
+  styles.css               token di colore e stili condivisi (stile «classic»: barra in alto)
+  skins/nova.css           stile «nova»: sidebar, blu notte e indaco; ridefinisce i token sotto [data-skin="nova"]
+  demo/data.js             dati sintetici (ax-weblogs, ax-orders, ax-orbit)
+  demo/corpus.js           corpus «come autoindex» per la Ricerca in demo (ax-orbit: file e simboli)
   demo/engine.js           motore che esegue il sottoinsieme di query DSL usato qui + router REST per Dev Tools
 pages/
   dashboard/               index.js, dashboard.css, examples.json (dashboard demo)
   discover/                index.js, discover.css
   devtools/                index.js, devtools.css
+  search/                  index.js, search.css   (solo XERJ e demo)
+  indices/                 index.js, indices.css  (solo XERJ e demo)
+  corpus/                  index.js, corpus.css   (solo XERJ: Corpus Hub, endpoint /_hub/v1)
 widgets/
   dist/                    widget standard + index.json   (non modificarli per personalizzare)
   custom/                  widget personalizzati + index.json + _template.js
@@ -65,6 +72,10 @@ All'avvio, se il server richiede credenziali, compare la schermata di accesso. S
 | `revealPassword` | `true`/`false` | `false`: niente occhio per vedere provvisoriamente password o token. |
 | `demo` | `true`/`false` | `false`: niente «Usa i dati demo». |
 
+Fuori da `connection`, `config.json → skin` sceglie lo stile predefinito dell'interfaccia: `nova` (sidebar a sinistra) o `classic`
+(barra in alto). L'utente lo cambia dal selettore «Stile», accanto a quello del tema (sistema/scuro/chiaro); entrambe le scelte restano nel browser.
+Uno stile cambia solo CSS e posizione della navigazione: pagine e widget usano i token `var(--…)`/`ctx.theme` e lo seguono da soli.
+
 Le credenziali stanno solo in `sessionStorage`; «Esci» in alto le cancella, il pulsante della connessione riapre
 la schermata. Su un 401 la shell torna al login. Serve CORS verso l'origine della pagina, oppure il proxy: `python3 tools/proxy.py --upstream https://… --insecure`
 (stessa origine; toglie `WWW-Authenticate` così il browser non apre il suo popup).
@@ -93,7 +104,9 @@ puntano al `type`. Per disattivare un widget custom senza cancellarlo: `"enabled
 
 1. Crea `pages/<id>/index.js` con `export default { id: '<id>', mount(slots, app) { … } }` e, se serve, `pages/<id>/<id>.css`.
 2. Aggiungi `{ "id": "<id>", "title": "…", "module": "pages/<id>/index.js", "css": "pages/<id>/<id>.css" }` a `config.json → pages`.
-3. La pagina è raggiungibile da tab e da `#/<id>`.
+3. La pagina è raggiungibile da tab e da `#/<id>`. Facoltativo `"engines": ["xerj", "demo", "es"]`: con quali connessioni la pagina
+   c'è (`es` = Elasticsearch/OpenSearch); senza, c'è sempre. La shell nasconde la pagina e, se è aperta, passa alla prima disponibile. Facoltativo `"icon"`: SVG inline 18×18 con `currentColor` per la sidebar dello stile nova
+   (`dashboard`, `discover` e `devtools` hanno già la loro icona).
 
 ### Creare una dashboard senza interfaccia
 
@@ -108,6 +121,26 @@ prendono `init` del widget).
 - Colori: `colors: { "<campo>": { "<valore>": 0-5 } }` (posizione nella palette). Facoltativo: se manca si assegna da solo.
 - Filtri di pagina: `{ field, value, neg? }` oppure, per più valori in OR, `{ field, values: [...], neg? }`.
 - Esempi completi: `pages/dashboard/examples.json`.
+
+### Index pattern
+
+Come i data view di Kibana: un nome con wildcard o più nomi separati da virgola (`ax-*`, `logs-a,logs-b`) e un campo tempo facoltativo.
+Si gestiscono dalla pagina **Indici**; compaiono per primi nei selettori di indice di Discover e delle dashboard, e il loro campo tempo
+è quello proposto in automatico (`backend.fields()` lo marca con `primary: true`, `ui.pickField` lo preferisce).
+Solo con XERJ e in demo: con Elasticsearch/OpenSearch `backend.listPatterns()` ritorna `[]`.
+
+- In demo: nel `localStorage` del browser.
+- Su XERJ: `PUT vega-index-patterns/_doc/<id>` con body `{ "title": "ax-*", "timefield": "@timestamp", "updated_at": <epoch ms> }`
+  (`config.json → patternIndex`). L'`id` è lo slug del titolo con `*` scritto `star` (`ax-*` → `ax-star`).
+
+### Corpus Hub (pagina Corpus, solo XERJ)
+
+La pagina legge solo gli endpoint read-only del nodo: `GET /_hub/v1/catalogue` (catalogo firmato), `/_hub/v1/search?q=`,
+`/_hub/v1/code/<slug>?q=` e `/_hub/v1/def/<slug>/<simbolo>`; i pack caricati li ricava da `_cat/indices/xc-*`
+(un pack ripristinato è `xc-<slug>-b<build>-*`). Non scarica niente: per un corpus non caricato mostra `xerj hub pull <slug>`.
+Il nodo deve avere `[hub] catalogue_path` (il file scritto da `xerj hub sync`), la cartella dei pack (`~/.xerj/hub/packs`) in
+`[limits] snapshot_repo_allowlist`, e girare con la stessa home (`HOME` / `XERJ_CODE_HOME`) di chi esegue `xerj hub pull`:
+altrimenti gli indici ci sono ma `/_hub/v1/code` e `/def` rispondono `corpus_not_loaded`.
 
 ### Estendere il motore demo
 
@@ -264,6 +297,10 @@ e prova ogni pannello delle dashboard di esempio. Controlla anche i cataloghi e 
 (i buchi sono avvisi, non errori). Exit code 1 se c'è almeno un errore.
 
 ## Limiti noti
+
+- XERJ v1.0.0-rc.74 (verificato il 2026-10-20): `_msearch` non espande le wildcard nell'header (`{"index":"ax-*"}` → 404, mentre
+  `ax-*/_search` funziona) e `post_filter` viene ignorato. La pagina Ricerca usa due ricerche in un `_msearch` invece di `post_filter`.
+  Le wildcard vanno corrette in XERJ, non aggirate qui.
 
 - Discover pagina con `from`/`size` fino a 10.000 documenti; `search_after` + PIT richiederebbe `_pit` su XERJ.
 - Il motore demo copre un sottoinsieme della query DSL: è un banco di prova, non un'implementazione di riferimento.

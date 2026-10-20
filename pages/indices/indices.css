@@ -1,0 +1,46 @@
+/* Indici: elenco a sinistra (indici o index pattern), dettaglio a destra; su schermi stretti uno sotto l'altro. */
+.ixfilter{flex:0 1 240px;min-width:0}
+.ixsys{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
+.ix{display:grid;grid-template-columns:minmax(260px,400px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ix{grid-template-columns:minmax(0,1fr)}}
+.ixcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.ixlist{position:sticky;top:calc(var(--hdr,130px) + 12px);max-height:calc(100vh - var(--hdr,130px) - 32px);overflow:auto;min-height:120px}
+@media (max-width:900px){.ixlist{position:static;max-height:none}}
+.ixhead,.ixrows button{display:grid;grid-template-columns:minmax(0,1fr) 76px 76px;gap:8px;align-items:center}
+.ixhead{padding:12px 14px 8px;border-bottom:1px solid var(--line);font:500 11px var(--mono);color:var(--muted);position:sticky;top:0;background:var(--surface);z-index:1}
+.ixhead b{font:600 13px var(--sans);color:var(--fg)}
+.ixhead span{text-align:right}
+.ixrows{list-style:none;margin:0;padding:6px}
+.ixrows .msg{padding:24px 12px}
+.ixrows button{grid-template-columns:10px minmax(0,1fr) 68px 68px;width:100%;border:1px solid transparent;background:transparent;border-radius:8px;padding:7px 8px;cursor:pointer;text-align:left}
+.ixrows button:hover{background:var(--sunk)}
+.ixrows button[aria-pressed="true"]{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.ixrows .nm{font:12.5px var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ixrows .num{font:11.5px var(--mono);color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hl{width:8px;height:8px;border-radius:50%;background:var(--c-other)}
+.hl.green{background:var(--ok)}.hl.yellow{background:var(--warn)}.hl.red{background:var(--danger)}.hl.pat{background:var(--accent);border-radius:2px}
+.ixdet{min-height:200px}
+.ixdet:empty{display:none}
+.ixdh{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;padding:16px 16px 10px}
+.ixdh h2{margin:4px 0 2px;font-size:18px;font-weight:600;font-family:var(--mono);overflow-wrap:anywhere}
+.ixmeta{margin:0;color:var(--muted);font-size:12.5px}
+.ixdet .dtabs{padding:0 16px}
+.ixbody{padding:4px 16px 16px;min-height:80px;overflow-x:auto}
+.ixmap td:first-child{white-space:nowrap}
+.ixmap .ft,.ixbody .ft{display:inline-grid;vertical-align:-4px;margin-right:4px}
+.ixh3{margin:14px 0 8px;font:500 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ixchips{display:flex;gap:6px;flex-wrap:wrap}
+.ixchips .chip{padding:3px 10px}
+.ixchips .chip span{color:var(--muted)}
+/* tabelle, schede e badge (le stesse forme di Discover e Dev Tools, che qui non sono caricati) */
+.ix .dtabs{display:flex;gap:4px;margin-bottom:8px;align-items:center;flex-wrap:wrap}
+.ix .dtabs button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px}
+.ix .dtabs button[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.ix .dvw{border-collapse:collapse;width:100%;font-size:12px}
+.ix .dvw th{text-align:left;font:500 11px var(--mono);color:var(--muted);padding:6px;border-bottom:1px solid var(--line)}
+.ix .dvw td{padding:5px 6px;border-bottom:1px solid var(--line)}
+.ix .ft{width:18px;height:18px;border-radius:4px;display:inline-grid;place-items:center;font:normal 600 10px var(--mono);background:var(--sunk);color:var(--muted)}
+.ix .ft.keyword{color:var(--c2)}.ix .ft.number{color:var(--c3)}.ix .ft.date{color:var(--c4)}.ix .ft.text{color:var(--c6)}
+.ix .djson{margin:0;font:12px/1.5 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:10px}
+.ix .badge{font:normal 10px var(--mono);background:var(--accent-soft);border-radius:4px;padding:0 4px}
+.ix .none{color:var(--muted);font-size:12.5px}

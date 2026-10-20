@@ -71,9 +71,52 @@ function qMatch(doc, q) {
   if (q.simple_query_string) return qsMatch(doc, q.simple_query_string.query, q.simple_query_string.fields);
   if (q.exists) return dv(doc, q.exists.field) != null;
   if (q.match_phrase) { const [f, c] = Object.entries(q.match_phrase)[0]; const v = dv(doc, f), s = c && typeof c === 'object' ? c.query : c; return v != null && String(v).toLowerCase().includes(String(s).toLowerCase()); }
+  if (q.multi_match) return fieldList(q.multi_match.fields).some(([f]) => words(q.multi_match.query).some(w => strOf(doc, f).includes(w)));
   if (q.match) { const [f, c] = Object.entries(q.match)[0]; const v = dv(doc, f), s = c && typeof c === 'object' ? c.query : c; return v != null && String(s).toLowerCase().split(/\s+/).some(w => String(v).toLowerCase().includes(w)); }
   throw new Error('query not supported by the demo engine: ' + Object.keys(q)[0]);
 }
+
+/* ---- punteggio per le query «a pertinenza» (pagina Ricerca): somma dei boost delle clausole soddisfatte ---- */
+const words = s => String(s || '').toLowerCase().split(/[^\p{L}\p{N}_]+/u).filter(w => w.length > 1);
+const fieldList = fs => (fs || ['*']).map(f => { const [n, b] = f.split('^'); return [n, +b || 1]; });
+const strOf = (doc, f) => f === '*' ? strFields(doc).join(' ').toLowerCase() : (typeof dv(doc, f) === 'string' ? dv(doc, f).toLowerCase() : '');
+const boostOf = c => (c && typeof c === 'object' && +c.boost) || 1;
+function scoreQ(doc, q) {
+  if (!q) return 0;
+  const arr = x => x ? (Array.isArray(x) ? x : [x]) : [];
+  if (q.bool) return [...arr(q.bool.must), ...arr(q.bool.should)].reduce((a, c) => a + scoreQ(doc, c), 0);
+  if (q.multi_match) {
+    const ws = words(q.multi_match.query);
+    return fieldList(q.multi_match.fields).reduce((a, [f, b]) => { const v = strOf(doc, f); return a + b * ws.filter(w => v.includes(w)).length / Math.max(1, ws.length); }, 0) * boostOf(q.multi_match);
+  }
+  if (q.match_phrase) { const [f, c] = Object.entries(q.match_phrase)[0]; const s = c && typeof c === 'object' ? c.query : c; return strOf(doc, f).includes(String(s).toLowerCase()) ? 2 * boostOf(c) : 0; }
+  if (q.term) { const [f, c] = Object.entries(q.term)[0]; const v = c && typeof c === 'object' ? c.value : c; return String(dv(doc, f)) === String(v) ? boostOf(c) : 0; }
+  if (q.match) { const [f, c] = Object.entries(q.match)[0]; const s = c && typeof c === 'object' ? c.query : c, ws = words(s), v = strOf(doc, f); return ws.filter(w => v.includes(w)).length * boostOf(c); }
+  return 0;
+}
+const scorable = q => !!q && (q.multi_match || q.match || q.match_phrase || (q.bool && [].concat(q.bool.should || [], q.bool.must || []).some(scorable)));
+/** Primo termine della query nel testo → il blocco che lo contiene, come `fields: ["_passage"]` di XERJ. */
+function passage(doc, q) {
+  const ws = [], walk = x => { if (!x || typeof x !== 'object') return; if (x.multi_match) ws.push(...words(x.multi_match.query)); for (const v of Object.values(x)) walk(v); };
+  walk(q);
+  for (const field of ['body', 'code', 'title']) {
+    const text = dv(doc, field); if (typeof text !== 'string') continue;
+    const low = text.toLowerCase(), at = Math.min(...ws.map(w => low.indexOf(w)).filter(i => i >= 0));
+    if (!isFinite(at)) continue;
+    let start = text.lastIndexOf('\n\n', at); start = start < 0 ? 0 : start + 2;
+    let end = text.indexOf('\n\n', at); end = end < 0 ? text.length : end;
+    if (end - start > 1600) end = start + 1600;
+    return [{ field, ordinal: 0, start_offset: start, end_offset: end, text: text.slice(start, end) }];
+  }
+  return null;
+}
+const pickSource = (src, sel) => {
+  if (sel == null || sel === true) return src;
+  if (sel === false) return {};
+  const inc = Array.isArray(sel) ? sel : sel.includes || (typeof sel === 'string' ? [sel] : null), exc = sel.excludes || [];
+  const o = {}; for (const [k, v] of Object.entries(src)) if ((!inc || inc.includes(k)) && !exc.includes(k)) o[k] = v;
+  return o;
+};
 
 function runAggs(docs, aggs) { const o = {}; for (const [n, d] of Object.entries(aggs || {})) o[n] = runAgg(docs, d); return o; }
 function runAgg(docs, def) {
@@ -151,21 +194,24 @@ export function demoSearch(pattern, body = {}) {
     for (const n of names) for (const d of data[n]) if (qMatch(d, body.query)) docs.push(d);
     const res = { took: 0, timed_out: false, hits: { total: { value: docs.length, relation: 'eq' }, max_score: null, hits: [] } };
     if (body.aggs || body.aggregations) res.aggregations = runAggs(docs, body.aggs || body.aggregations);
+    if (body.post_filter) { const kept = docs.filter(d => qMatch(d, body.post_filter)); docs.length = 0; docs.push(...kept); res.hits.total.value = docs.length; }
     const size = body.size ?? 10, from = body.from || 0;
     if (size > 0) {
       const sq = [].concat(body.query?.bool?.must || []).find(x => x.query_string)?.query_string;
       const score = d => sq ? qsTerms(sq.query).filter(t => strFields(d, t.field ? [t.field] : sq.fields).some(x => x.toLowerCase().includes(t.v))).length : 1;
       const sorts = (body.sort || []).map(s => typeof s === 'string' ? [s, 'desc'] : [Object.keys(s)[0], (Object.values(s)[0].order || Object.values(s)[0])]);
-      const sc = new Map(); if (sq) for (const d of docs) sc.set(d, score(d));
+      const rel = !sq && scorable(body.query);
+      const sc = new Map(); if (sq) for (const d of docs) sc.set(d, score(d)); else if (rel) for (const d of docs) sc.set(d, Math.round(scoreQ(d, body.query) * 1000) / 1000);
+      if (rel && !sorts.length) sorts.push(['_score', 'desc']);
       const val = (d, f) => f === '_score' ? sc.get(d) : dv(d, f);
       const list = sorts.length ? [...docs].sort((a, b) => { for (const [f, o] of sorts) { const x = val(a, f), y = val(b, f), c = (x > y) - (x < y); if (c) return o === 'asc' ? c : -c; } return 0; }) : docs;
       const dates = new Set(names.flatMap(n => Object.entries(DEMO_MAP[n]).filter(([, v]) => v.type === 'date').map(([k]) => k)));
       res.hits.hits = list.slice(from, from + size).map(d => {
         let src = { ...d }; for (const k of dates) if (src[k] != null) src[k] = new Date(src[k]).toISOString();
-        const h = { _index: names.length > 1 ? names.find(n => data[n].includes(d)) : names[0], _id: d._id, _score: sq ? sc.get(d) : 1 };
+        const h = { _index: names.length > 1 ? names.find(n => data[n].includes(d)) : names[0], _id: d._id, _score: sc.has(d) ? sc.get(d) : 1 };
         if (body.highlight && sq) { const hl = demoHighlight(d, sq.query, sq.fields); if (hl) h.highlight = hl; }
-        if (Array.isArray(body._source)) { const o = {}; for (const k of body._source) o[k] = src[k]; src = o; }
-        h._source = src; return h;
+        if ((body.fields || []).includes('_passage')) { const p = passage(d, body.query); if (p) h.fields = { _passage: p }; }
+        h._source = pickSource(src, body._source); return h;
       });
     }
     res.took = Math.max(1, Date.now() - t0);
@@ -193,9 +239,9 @@ export function demoRoute(method, rawPath, body) {
 
   if (!seg.length) return M === 'GET' || M === 'HEAD' ? { status: 200, body: { name: 'xerj-demo', cluster_name: 'demo', version: { number: 'demo', distribution: 'xerj-demo' }, tagline: 'Synthetic data generated in the browser' } } : ro();
   if (seg[0] === '_cat' && seg[1] === 'indices') {
-    const rows = demoIndices().filter(n => !seg[2] || wild(n, seg[2])).map(n => ({ health: 'green', status: 'open', index: n, 'docs.count': String(data[n].length) }));
+    const rows = demoIndices().filter(n => !seg[2] || seg[2].split(',').some(p => wild(n, p))).map(n => ({ health: 'green', status: 'open', index: n, 'docs.count': String(data[n].length), 'store.size': String(JSON.stringify(data[n]).length) }));
     if (params.get('format') === 'json') return { status: 200, body: rows };
-    const cols = ['health', 'status', 'index', 'docs.count'], w = cols.map(c => Math.max(c.length, ...rows.map(r => r[c].length)));
+    const cols = ['health', 'status', 'index', 'docs.count', 'store.size'], w = cols.map(c => Math.max(c.length, ...rows.map(r => r[c].length)));
     const line = r => cols.map((c, i) => String(r[c]).padEnd(w[i])).join(' ');
     return { status: 200, body: (params.has('v') ? line(Object.fromEntries(cols.map(c => [c, c]))) + '\n' : '') + rows.map(line).join('\n') + '\n' };
   }
@@ -213,6 +259,7 @@ export function demoRoute(method, rawPath, body) {
   const idx = seg[0];
   if (!indexNames(idx).length) return err(404, 'index_not_found_exception', 'no such index [' + idx + ']');
   if (seg.length === 1) return M === 'GET' ? { status: 200, body: Object.fromEntries(indexNames(idx).map(n => [n, { mappings: { properties: DEMO_MAP[n] }, settings: { index: { number_of_shards: '1', number_of_replicas: '0' } } }])) } : ro();
+  if (seg[1] === '_settings') return M === 'GET' ? { status: 200, body: Object.fromEntries(indexNames(idx).map(n => [n, { settings: { index: { number_of_shards: '1', number_of_replicas: '0', provided_name: n } } }])) } : ro();
   if (seg[1] === '_mapping') return M === 'GET' ? { status: 200, body: demoMapping(idx) } : ro();
   if (seg[1] === '_search') {
     if (M !== 'POST' && M !== 'GET') return ro();

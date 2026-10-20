@@ -12,6 +12,21 @@ import { shortDT } from './util.js';
 import { t, L, LANGS, getLang, setLang, isForced } from './i18n.js';
 
 const listeners = {};
+const svg = d => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const PAGE_ICONS = {
+  dashboard: svg('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
+  search: svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'),
+  discover: svg('<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>'),
+  corpus: svg('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>'),
+  indices: svg('<ellipse cx="12" cy="5.5" rx="7.5" ry="2.5"/><path d="M4.5 5.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6"/><path d="M4.5 11.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6"/>'),
+  devtools: svg('<path d="M8 8l-4 4 4 4"/><path d="M16 8l4 4-4 4"/><path d="M13.5 5l-3 14"/>'),
+  page: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>')
+};
+const THEME_ICONS = {
+  auto: svg('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>'),
+  dark: svg('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'),
+  light: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>')
+};
 const pages = new Map();          // id → { def, section, bar, filters, mounted, stale, entry }
 let active = null;
 
@@ -19,7 +34,7 @@ async function boot() {
   setLocale();
   const config = await (await fetch(new URL('../config.json', import.meta.url))).json();
   const base = new URL('../', import.meta.url).href;
-  const backend = createBackend({ dashboardIndex: config.dashboardIndex, defaultConnection: config.connection });
+  const backend = createBackend({ dashboardIndex: config.dashboardIndex, patternIndex: config.patternIndex, defaultConnection: config.connection });
   const { widgets, problems } = await loadWidgets(config.widgets || [], base);
 
   const saved = store.get('xvb.time', { value: '7d', refresh: 0 });
@@ -67,7 +82,7 @@ async function boot() {
     toast(t('time.narrowed', { from: shortDT(a), to: shortDT(b) }), t('time.back'), () => app.time.back());
   });
 
-  /* ---- navigazione ---- */
+  /* ---- navigazione: sidebar con icona e titolo; l'icona viene da config.json (pages[].icon, SVG inline) o da PAGE_ICONS ---- */
   const nav = $('#nav'), main = $('#pages'), bars = $('#pagebars');
   for (const p of config.pages) {
     const section = document.createElement('section'); section.className = 'page'; section.dataset.page = p.id; section.hidden = true;
@@ -78,13 +93,21 @@ async function boot() {
     bar.appendChild(filters);
     main.appendChild(section); bars.appendChild(bar);
     pages.set(p.id, { entry: p, section, bar, filters, def: null, mounted: false, stale: false });
-    nav.insertAdjacentHTML('beforeend', `<button type="button" role="tab" id="tab-${esc(p.id)}" data-page="${esc(p.id)}" aria-selected="false" aria-controls="">${esc(L(p.title))}</button>`);
+    nav.insertAdjacentHTML('beforeend', `<button type="button" role="tab" id="tab-${esc(p.id)}" data-page="${esc(p.id)}" aria-selected="false" aria-controls="">${p.icon || PAGE_ICONS[p.id] || PAGE_ICONS.page}<span>${esc(L(p.title))}</span></button>`);
   }
   nav.addEventListener('click', e => { const b = e.target.closest('[data-page]'); if (b) app.navigate(b.dataset.page); });
   window.addEventListener('hashchange', () => { const id = location.hash.replace(/^#\/?/, ''); if (pages.has(id) && id !== active) show(id); });
 
+  // pages[].engines (facoltativo): con quali connessioni la pagina c'è — xerj, demo, es (Elasticsearch/OpenSearch)
+  const allowed = p => !p.entry.engines || p.entry.engines.includes(backend.conn.mode);
+  const firstAllowed = () => [...pages.values()].find(allowed) || pages.get(config.pages[0].id);
+  const paintNav = () => { for (const p of pages.values()) nav.querySelector(`[data-page="${CSS.escape(p.entry.id)}"]`).hidden = !allowed(p); };
+  app.on('connection', () => { paintNav(); const p = pages.get(active); if (p && !allowed(p)) app.navigate(firstAllowed().entry.id); });
+  paintNav();
+
   async function show(id, intent) {
-    const p = pages.get(id) || pages.get(config.pages[0].id);
+    let p = pages.get(id) || pages.get(config.pages[0].id);
+    if (!allowed(p)) { p = firstAllowed(); if (location.hash !== '#/' + p.entry.id) history.replaceState(null, '', '#/' + p.entry.id); }
     if (!p.def) {
       try {
         if (p.entry.css) await loadCss(p.entry.css);
@@ -235,12 +258,59 @@ async function boot() {
   langSel.addEventListener('change', () => { setLang(langSel.value || null); location.reload(); });
   $('#btnProblems').title = t('problems.title');
 
-  /* ---- modale e tema ---- */
+  /* ---- tema: segue il sistema, si può forzare scuro o chiaro (salvato nel browser, applicato da index.html all'avvio) ---- */
+  const btnTheme = $('#btnTheme'), THEMES = ['auto', 'dark', 'light'];
+  const paintTheme = () => {
+    const cur = document.documentElement.dataset.theme || 'auto';
+    btnTheme.innerHTML = THEME_ICONS[cur] + `<span>${t('theme.' + cur)}</span>`;
+    btnTheme.title = t('theme.label');
+  };
+  btnTheme.addEventListener('click', () => {
+    const next = THEMES[(THEMES.indexOf(document.documentElement.dataset.theme || 'auto') + 1) % THEMES.length];
+    try { if (next === 'auto') localStorage.removeItem('xvb.theme'); else localStorage.setItem('xvb.theme', next); } catch (e) { /* ignorato */ }
+    if (next === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = next;
+    paintTheme();
+  });
+  paintTheme();
+
+  /* ---- stile dell'interfaccia: «classic» (barra in alto) o «nova» (sidebar a sinistra, core/skins/nova.css).
+     Con XERJ e in demo: default da config.json → skin, la scelta dal selettore resta nel browser.
+     Con Elasticsearch/OpenSearch resta sempre la board classica (niente selettore).
+     Lo stile cambia solo CSS e posizione di navigazione e selettori: pagine e widget non se ne accorgono
+     (ricevono i nuovi colori con l'evento theme). ---- */
+  const SKINS = ['classic', 'nova'], skinSel = $('#skinSel'), root = document.documentElement;
+  const side = document.createElement('aside'); side.className = 'side';
+  side.innerHTML = `<div class="sbrand"><div class="glyph" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><b>XERJ</b><span>Vega Board</span></div></div><div class="snav"></div><div class="sfoot"></div>`;
+  document.body.prepend(side);
+  // nella barra classica ogni elemento torna al suo posto: un segnaposto ricorda dov'era
+  const movable = [[nav, '.snav'], [skinSel, '.sfoot'], [btnTheme, '.sfoot'], [langSel, '.sfoot']]
+    .map(([el, to]) => { const mark = document.createComment(el.id); el.before(mark); return { el, to, mark }; });
+  const applySkin = k => {
+    k = SKINS.includes(k) ? k : 'classic';
+    root.dataset.skin = k; skinSel.value = k; side.hidden = k !== 'nova';
+    nav.setAttribute('aria-orientation', k === 'nova' ? 'vertical' : 'horizontal');
+    for (const m of movable) (k === 'nova' ? side.querySelector(m.to).appendChild(m.el) : m.mark.after(m.el));
+  };
+  skinSel.setAttribute('aria-label', t('skin.label')); skinSel.title = t('skin.label');
+  skinSel.innerHTML = SKINS.map(k => `<option value="${k}">${t('skin.' + k)}</option>`).join('');
+  const skinFor = () => {
+    if (backend.conn.mode === 'es') return 'classic';
+    try { return localStorage.getItem('xvb.skin') || config.skin || 'nova'; } catch (e) { return config.skin || 'nova'; }
+  };
+  const paintSkin = () => { applySkin(skinFor()); skinSel.hidden = backend.conn.mode === 'es'; };
+  skinSel.addEventListener('change', () => {
+    try { localStorage.setItem('xvb.skin', skinSel.value); } catch (e) { /* ignorato */ }
+    applySkin(skinSel.value);
+  });
+  app.on('connection', paintSkin);
+  paintSkin();
+
+  /* ---- modale ---- */
   $('#modal').addEventListener('click', e => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) modal.close(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.isOpen) modal.close(); });
-  const onTheme = () => { app.emit('theme'); refreshActive(); };
+  const onTheme = () => { paintTheme(); app.emit('theme'); refreshActive(); };
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onTheme);
-  new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-skin'] });
 
   // altezza dell'header in --hdr: serve agli elementi sticky delle pagine
   const hdr = document.querySelector('.top');

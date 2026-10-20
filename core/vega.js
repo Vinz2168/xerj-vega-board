@@ -26,7 +26,7 @@ export function theme() {
   const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
   return { fg: g('--fg'), muted: g('--muted'), line: g('--line'), sunk: g('--sunk'), surface: g('--surface'), other: g('--c-other'),
     accent: g('--accent'), danger: g('--danger'), ok: g('--ok'), warn: g('--warn'),
-    c: [1, 2, 3, 4, 5, 6].map(i => g('--c' + i)), font: 'IBM Plex Sans, system-ui, sans-serif', mono: 'IBM Plex Mono, ui-monospace, monospace' };
+    c: [1, 2, 3, 4, 5, 6].map(i => g('--c' + i)), font: g('--sans'), mono: g('--mono') };
 }
 export function vegaConfig(t) {
   return { background: null, font: t.font, view: { stroke: null },

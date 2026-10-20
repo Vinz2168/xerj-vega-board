@@ -159,7 +159,7 @@ export function pickField(fields, ft, used = []) {
   // preferisce un campo non ancora usato da un altro parametro dello stesso widget (es. due anelli, due assi)
   const all = fields.filter(f => f.type === ft); if (!all.length) return '';
   const fs = all.filter(f => !used.includes(f.name)).length ? all.filter(f => !used.includes(f.name)) : all;
-  if (ft === 'date') return (fs.find(f => f.name === '@timestamp') || fs.find(f => /time|date/i.test(f.name)) || fs[0]).name;
+  if (ft === 'date') return (fs.find(f => f.primary) || fs.find(f => f.name === '@timestamp') || fs.find(f => /time|date/i.test(f.name)) || fs[0]).name;
   if (ft === 'keyword') return (fs.find(f => !/(^|_)id$/i.test(f.name) && !f.name.endsWith('.keyword')) || fs[0]).name;
   return fs[0].name;
 }

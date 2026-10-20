@@ -1,5 +1,7 @@
 // Dati sintetici per la modalità demo: generati nel browser (o in Node) con un seed fisso.
 
+import { CORPUS_MAP, corpusDocs } from './corpus.js';
+
 export const DEMO_MAP = {
   'ax-weblogs': {
     '@timestamp': { type: 'date' }, host: { type: 'keyword' }, method: { type: 'keyword' }, path: { type: 'keyword' },
@@ -8,7 +10,8 @@ export const DEMO_MAP = {
   'ax-orders': {
     order_date: { type: 'date' }, order_id: { type: 'keyword' }, status: { type: 'keyword' }, category: { type: 'keyword' },
     country: { type: 'keyword' }, items: { type: 'integer' }, total: { type: 'double' }
-  }
+  },
+  'ax-orbit': CORPUS_MAP   // corpus «come autoindex» per la pagina Ricerca
 };
 
 function rng(seed) {
@@ -73,6 +76,8 @@ export function demoData() {
   }
   web.forEach((d, n) => Object.defineProperty(d, '_id', { value: 'w' + n.toString(36) }));
   orders.forEach((d, n) => Object.defineProperty(d, '_id', { value: 'o' + n.toString(36) }));
-  DATA = { 'ax-weblogs': web, 'ax-orders': orders };
+  const orbit = corpusDocs();
+  orbit.forEach((d, n) => Object.defineProperty(d, '_id', { value: 'c' + n.toString(36) }));
+  DATA = { 'ax-weblogs': web, 'ax-orders': orders, 'ax-orbit': orbit };
   return DATA;
 }

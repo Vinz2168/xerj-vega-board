@@ -55,6 +55,10 @@ body.drawer-open .app{padding-right:calc(var(--drawer) + 16px)}
 .tabs{display:inline-flex;border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px;background:var(--surface);max-width:100%;overflow-x:auto}
 .tabs button{border:0;background:transparent;border-radius:6px;padding:5px 12px;cursor:pointer;font-weight:500;color:var(--muted);white-space:nowrap}
 .tabs button[aria-selected="true"]{background:var(--fg);color:var(--bg)}
+.tabs button svg{display:none}   /* le icone delle pagine servono solo alla sidebar dello stile nova */
+#btnTheme{padding:0 9px}
+#btnTheme span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.side{display:none}
 .warnbtn{color:var(--warn);border-color:var(--warn)}
 .warnbtn b{font:600 13px var(--mono)}
 .langsel{min-height:36px;padding:0 26px 0 10px;font-size:13px;background:transparent;max-width:180px}
