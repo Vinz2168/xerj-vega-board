@@ -1,4 +1,5 @@
 /* Stile «nova»: sidebar a sinistra, blu notte con accento indaco, card con bordo luminoso.
+   Ispirato al concept «XERJ Companion» di @pilahito (https://github.com/xerj-org/xerj/issues/1755).
    Si attiva con <html data-skin="nova"> (config.json → skin, o il selettore nella sidebar); lo stile classico resta in
    core/styles.css. Qui si ridefiniscono i token e si sovrascrivono solo forma e impaginazione: pagine e widget
    continuano a usare var(--…) e ctx.theme e seguono lo stile senza modifiche. */

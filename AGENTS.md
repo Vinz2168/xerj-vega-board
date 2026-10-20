@@ -33,6 +33,7 @@ core/
   i18n/en.js, i18n/it.js   cataloghi delle stringhe del core (stesse chiavi)
   styles.css               token di colore e stili condivisi (stile «classic»: barra in alto)
   skins/nova.css           stile «nova»: sidebar, blu notte e indaco; ridefinisce i token sotto [data-skin="nova"]
+                           (ispirato al concept XERJ Companion di @pilahito, xerj-org/xerj#1755)
   demo/data.js             dati sintetici (ax-weblogs, ax-orders, ax-orbit)
   demo/corpus.js           corpus «come autoindex» per la Ricerca in demo (ax-orbit: file e simboli)
   demo/engine.js           motore che esegue il sottoinsieme di query DSL usato qui + router REST per Dev Tools
