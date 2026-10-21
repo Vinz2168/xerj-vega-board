@@ -18,3 +18,5 @@
 .sttable .chk{padding:0;font-family:var(--sans)}
 .sttable select{min-height:30px;padding:2px 26px 2px 8px;font-size:12.5px}
 .st .warnt{color:var(--warn)}
+.stchecks .stoff{color:var(--muted)}
+.stchecks .chk em{font-style:normal;font-size:11.5px;color:var(--muted);margin-left:4px}

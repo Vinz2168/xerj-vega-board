@@ -70,6 +70,8 @@
 [data-skin="nova"] :is(input,select,textarea):focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
 [data-skin="nova"] .btn{border-radius:10px;min-height:38px;background:var(--surface)}
 [data-skin="nova"] .btn.ghost{background:transparent}
+[data-skin="nova"] .btn.danger{background:var(--danger);border-color:var(--danger);color:var(--surface)}
+[data-skin="nova"] .btn.danger:hover{filter:brightness(1.08);border-color:var(--danger)}
 [data-skin="nova"] .btn:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
 [data-skin="nova"] .btn.primary{background:var(--accent-grad);border-color:transparent;color:var(--accent-ink);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 60%,transparent),0 8px 22px -8px var(--glow)}
 [data-skin="nova"] .btn.primary:hover{filter:brightness(1.08)}

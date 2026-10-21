@@ -23,7 +23,9 @@ and any engine with an Elasticsearch-compatible API. Every chart is a modular wi
   with highlighting, options list, free Vega-Lite, plus a target-vs-threshold bullet as a custom example.
 - **With XERJ only** (the demo shows them too): **Search** over the code and documents written by `xerj autoindex`
   (definitions first, the matching block with its real line numbers), **Corpus Hub** (catalogue, loaded packs, questions
-  through `/_hub/v1`) and **Indices** (mappings, settings and **index patterns** used by Discover and the dashboards).
+  through `/_hub/v1`), **Indices** (mappings, settings and **index patterns** used by Discover and the dashboards),
+  **Agent Memory** (browse, recall and clean up what AI agents remember, `/_memory`) and **Metrics** (query rate, latency
+  percentiles, indexing, memory and WAL sampled from `/v1/metrics`). Settings can hide pages from the navigation.
   With Elasticsearch/OpenSearch the board stays the classic one.
 - **Two styles**: classic (top bar) and **Nova** (sidebar, night blue and indigo), the default with XERJ.
   Nova is inspired by the *XERJ Companion* concept by [@pilahito](https://github.com/pilahito)

@@ -6,7 +6,8 @@ Leggi tutto prima della prima modifica: il progetto è piccolo, ma ha contratti 
 ## In breve
 
 - Interfaccia leggera per XERJ e per qualsiasi motore con API Elasticsearch: **Dashboard**, **Discover**, **Dev Tools**.
-  Con XERJ (e in demo) anche **Ricerca** (codice e documenti di `xerj autoindex`) e **Indici** (mapping, impostazioni, index pattern);
+  Con XERJ (e in demo) anche **Ricerca** (codice e documenti di `xerj autoindex`), **Indici** (mapping, impostazioni, index pattern),
+  **Memoria agenti** (`/_memory`) e **Metriche** (`/v1/metrics`);
   con Elasticsearch/OpenSearch la board resta quella classica.
 - **Niente build.** ES modules nativi, serviti così come sono. Vega, Vega-Lite e vega-embed arrivano da CDN come globali (`index.html`).
 - **Tutto si estende aggiungendo file e una riga in un manifest.** Non serve toccare il core per aggiungere un widget o una pagina.
@@ -37,6 +38,8 @@ core/
                            (ispirato al concept XERJ Companion di @pilahito, xerj-org/xerj#1755)
   demo/data.js             dati sintetici (ax-weblogs, ax-orders, ax-orbit)
   demo/corpus.js           corpus «come autoindex» per la Ricerca in demo (ax-orbit: file e simboli)
+  demo/memory.js           Agent Memory in demo: namespace di esempio in RAM (stesso contratto di /_memory)
+  demo/metrics.js          /v1/metrics in demo: testo Prometheus sintetico con i nomi delle metriche di XERJ
   demo/engine.js           motore che esegue il sottoinsieme di query DSL usato qui + router REST per Dev Tools
 pages/
   dashboard/               index.js, dashboard.css, examples.json (dashboard demo)
@@ -45,7 +48,9 @@ pages/
   search/                  index.js, search.css   (solo XERJ e demo)
   indices/                 index.js, indices.css  (solo XERJ e demo)
   corpus/                  index.js, corpus.css   (solo XERJ: Corpus Hub, endpoint /_hub/v1)
-  settings/                index.js, settings.css (XERJ e demo: esporta, importa, ripristina la configurazione)
+  memory/                  index.js, memory.css   (XERJ e demo: Agent Memory, endpoint /_memory/{namespace})
+  metrics/                 index.js, metrics.css  (XERJ e demo: metriche Prometheus campionate, /v1/metrics)
+  settings/                index.js, settings.css (XERJ e demo: pagine visibili; esporta, importa, ripristina la configurazione)
 widgets/
   dist/                    widget standard + index.json   (non modificarli per personalizzare)
   declarative/seed.json    widget dichiarativi di esempio (JSON), copiati nell'indice dei widget
@@ -170,6 +175,29 @@ Solo con XERJ e in demo: con Elasticsearch/OpenSearch `backend.listPatterns()` r
 - In demo: nel `localStorage` del browser.
 - Su XERJ: `PUT vega-index-patterns/_doc/<id>` con body `{ "title": "ax-*", "timefield": "@timestamp", "updated_at": <epoch ms> }`
   (`config.json → patternIndex`). L'`id` è lo slug del titolo con `*` scritto `star` (`ax-*` → `ax-star`).
+
+### Nascondere pagine
+
+Da Impostazioni → «Pagine» l'utente sceglie quali pagine compaiono nella navigazione (`localStorage['xvb.pages.hidden']`,
+esportato con le preferenze). Una pagina nascosta non è raggiungibile nemmeno da `#/<id>` (la shell passa alla prima disponibile).
+Impostazioni non si nasconde, e dove Impostazioni non c'è (Elasticsearch/OpenSearch) la scelta non vale: si nasconde solo
+dove si può anche rimostrare. Dal codice: `app.pageList()` e `app.setHiddenPages(ids)` (evento `pages`).
+Per togliere una pagina a tutti gli utenti, invece, si toglie da `config.json → pages`.
+
+### Agent Memory (pagina Memoria agenti, XERJ e demo)
+
+Legge e modifica la memoria degli agenti: `GET /_memory/<ns>?from&size` (elenco, dal più recente), `POST /_memory/<ns>/_recall`
+(`query`, `k`, `semantic: true` o `hybrid: true`) e `DELETE /_memory/<ns>/<id>` (con conferma; «Annulla» riscrive la voce con
+`POST /_memory/<ns>` e lo stesso id, testo e metadati, ma non un vettore fornito dall'agente). Non elimina mai un namespace intero.
+XERJ non ha un endpoint che elenchi i namespace (gli indici `.xerj-memory-*` sono riservati e le wildcard non li includono):
+la pagina ricorda nel browser quelli aperti (`xvb.memory`). Un elenco dei namespace va chiesto a XERJ, non aggirato qui.
+
+### Metriche (pagina Metriche, XERJ e demo)
+
+Legge `GET /v1/metrics` (testo Prometheus, montato anche sulla porta ES) ogni N secondi mentre la pagina è aperta e tiene in
+memoria gli ultimi 180 campioni. Tassi (query/s, documenti/s) e latenze p50/p95/p99 vengono dalla differenza tra due letture
+(interpolazione nei bucket di `xerj_query_latency_seconds`, come `histogram_quantile`); i gauge (documenti, segmenti, memoria,
+WAL, query cache) dall'ultima. Tabella per indice da `xerj_queries_by_index_total` e `xerj_docs_indexed_by_index_total`.
 
 ### Corpus Hub (pagina Corpus, solo XERJ)
 

@@ -19,6 +19,7 @@ const page = {
     app = a;
     slots.main.innerHTML = `<div class="st">
       <section class="ixcard stcard"><h2>${t('set.state')}</h2><p class="help">${t('set.stateHelp')}</p><div class="stcounts" id="stCounts"></div></section>
+      <section class="ixcard stcard"><h2>${t('set.pages')}</h2><p class="help">${t('set.pagesHelp')}</p><div class="stchecks" id="stPages"></div></section>
       <section class="ixcard stcard"><h2>${t('set.export')}</h2><p class="help">${t('set.exportHelp')}</p>
         <div class="stchecks" id="stExp">${checks('exp')}</div>
         <div class="mrow"><button type="button" class="btn primary" id="stExpGo">${t('set.exportGo')}</button></div></section>
@@ -34,6 +35,8 @@ const page = {
     $('#stFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) readFile(f); };
     $('#stBackup').onclick = () => { const b = store.get(BACKUP, null); if (b) preview(b, t('set.backupName', { when: new Date(b.exported_at).toLocaleString() })); };
     $('#stResGo').onclick = () => resetNow();
+    $('#stPages').onchange = () => app.setHiddenPages([...$('#stPages').querySelectorAll('input:not(:checked)')].map(i => i.dataset.p));
+    app.on('pages', paintPages);
     await page.refresh();
   },
   async refresh() {
@@ -43,11 +46,17 @@ const page = {
     $('#stCounts').innerHTML = SECTIONS.map(s => `<div><span>${t('set.s.' + s)}</span><b>${fmtNum(counts[s])}</b>${s === 'widgets' ? `<em>${t('set.userWidgets', { n: user })}</em>` : ''}</div>`).join('')
       + `<p class="help stwhere">${app.backend.isDemo() ? t('set.whereDemo') : t('set.where', { mode: esc(app.backend.conn.url), w: code(app.backend.widgetIndex), d: code(app.backend.dashboardIndex), p: code(app.backend.patternIndex) })}</p>`;
     $('#stBackup').hidden = !store.get(BACKUP, null);
+    paintPages();
   }
 };
 export default page;
 
 const code = s => '<code>' + esc(s) + '</code>';
+/** Pagine visibili nella navigazione: una casella per pagina; Impostazioni resta sempre (da qui si rimostrano le altre). */
+function paintPages() {
+  $('#stPages').innerHTML = app.pageList().map(p => `<label class="chk${p.available ? '' : ' stoff'}"${p.pinned ? ` title="${esc(t('set.pagePinned'))}"` : ''}>
+    <input type="checkbox" data-p="${esc(p.id)}"${p.hidden ? '' : ' checked'}${p.pinned ? ' disabled' : ''}> <span>${esc(p.title)}</span>${p.available ? '' : `<em>${t('set.pageOtherEngine')}</em>`}</label>`).join('');
+}
 const checks = id => SECTIONS.map(s => `<label class="chk"><input type="checkbox" data-s="${s}" checked> <span>${t('set.s.' + s)}</span></label>`).join('');
 const chosen = id => [...$('#' + id).querySelectorAll('input:checked')].map(i => i.dataset.s);
 const stamp = () => new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '').replace(/^(\d{8})/, '$1-');
@@ -60,7 +69,7 @@ async function collect(sections) {
   if (sections.includes('patterns')) b.patterns = (await be.listPatterns().catch(() => [])).map(({ id, title, timefield }) => ({ id, title, timefield }));
   if (sections.includes('prefs')) {
     b.prefs = {};
-    for (const [k, key, json] of [['skin', 'xvb.skin'], ['theme', 'xvb.theme'], ['lang', 'xvb.lang'], ['time', 'xvb.time', true]]) {
+    for (const [k, key, json] of [['skin', 'xvb.skin'], ['theme', 'xvb.theme'], ['lang', 'xvb.lang'], ['time', 'xvb.time', true], ['pages', 'xvb.pages.hidden', true]]) {
       try { const v = localStorage.getItem(key); if (v != null) b.prefs[k] = json ? JSON.parse(v) : v; } catch (e) { /* ignorato */ }
     }
   }
@@ -108,7 +117,7 @@ async function analyze(b) {
     out.patterns = { ok, bad: b.patterns.filter(p => !ok.includes(p)).map(p => [JSON.stringify(p).slice(0, 40), 'missing "title"']), over: ok.filter(p => have.has(p.title)).length };
   }
   if (b.prefs) {
-    const ok = Object.entries(b.prefs).filter(([k]) => ['skin', 'theme', 'lang', 'time'].includes(k));
+    const ok = Object.entries(b.prefs).filter(([k]) => ['skin', 'theme', 'lang', 'time', 'pages'].includes(k));
     out.prefs = { ok, bad: Object.keys(b.prefs).filter(k => !ok.some(([x]) => x === k)).map(k => [k, 'unknown preference']), over: ok.length };
   }
   return out;
@@ -162,6 +171,7 @@ async function apply(an, sel, modes) {
 function applyPrefs(p) {
   const set = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch (e) { /* ignorato */ } };
   set('xvb.time', p.time);
+  app.setHiddenPages(Array.isArray(p.pages) ? p.pages : []);
   set('xvb.theme', p.theme === 'dark' || p.theme === 'light' ? p.theme : null);
   if (p.theme === 'dark' || p.theme === 'light') document.documentElement.dataset.theme = p.theme; else delete document.documentElement.dataset.theme;
   const sk = $('#skinSel'); set('xvb.skin', p.skin || null);

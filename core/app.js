@@ -20,6 +20,8 @@ const PAGE_ICONS = {
   corpus: svg('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>'),
   settings: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
   indices: svg('<ellipse cx="12" cy="5.5" rx="7.5" ry="2.5"/><path d="M4.5 5.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6"/><path d="M4.5 11.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6"/>'),
+  memory: svg('<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5.2A3 3 0 0 0 6 17a3 3 0 0 0 3 3h0a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5.2A3 3 0 0 1 18 17a3 3 0 0 1-3 3h0a3 3 0 0 1-3-3"/>'),
+  metrics: svg('<path d="M3 12h4l3-8 4 16 3-8h4"/>'),
   devtools: svg('<path d="M8 8l-4 4 4 4"/><path d="M16 8l4 4-4 4"/><path d="M13.5 5l-3 14"/>'),
   page: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>')
 };
@@ -117,12 +119,29 @@ async function boot() {
   nav.addEventListener('click', e => { const b = e.target.closest('[data-page]'); if (b) app.navigate(b.dataset.page); });
   window.addEventListener('hashchange', () => { const id = location.hash.replace(/^#\/?/, ''); if (pages.has(id) && id !== active) show(id); });
 
-  // pages[].engines (facoltativo): con quali connessioni la pagina c'è — xerj, demo, es (Elasticsearch/OpenSearch)
-  const allowed = p => !p.entry.engines || p.entry.engines.includes(backend.conn.mode);
+  // pages[].engines (facoltativo): con quali connessioni la pagina c'è — xerj, demo, es (Elasticsearch/OpenSearch).
+  // In più l'utente può nascondere pagine da Impostazioni (xvb.pages.hidden, nel browser). Impostazioni non si nasconde,
+  // e dove Impostazioni non c'è (es. con Elasticsearch) la scelta non vale: una pagina si nasconde solo dove si può anche rimostrare.
+  const PINNED = 'settings';
+  let hidden = new Set([].concat(store.get('xvb.pages.hidden', [])));
+  const forEngine = p => !p.entry.engines || p.entry.engines.includes(backend.conn.mode);
+  const hidesApply = () => pages.has(PINNED) && forEngine(pages.get(PINNED));
+  const allowed = p => forEngine(p) && !(hidesApply() && p.entry.id !== PINNED && hidden.has(p.entry.id));
   const firstAllowed = () => [...pages.values()].find(allowed) || pages.get(config.pages[0].id);
   const paintNav = () => { for (const p of pages.values()) nav.querySelector(`[data-page="${CSS.escape(p.entry.id)}"]`).hidden = !allowed(p); };
-  app.on('connection', () => { paintNav(); const p = pages.get(active); if (p && !allowed(p)) app.navigate(firstAllowed().entry.id); });
+  const leaveIfGone = () => { const p = pages.get(active); if (p && !allowed(p)) app.navigate(firstAllowed().entry.id); };
+  app.on('connection', () => { paintNav(); leaveIfGone(); });
   paintNav();
+  Object.assign(app, {
+    /** Pagine di config.json per Impostazioni: { id, title, available (motore attuale), hidden, pinned }. */
+    pageList: () => config.pages.map(e => ({ id: e.id, title: L(e.title), available: forEngine(pages.get(e.id)), hidden: e.id !== PINNED && hidden.has(e.id), pinned: e.id === PINNED })),
+    /** Nasconde dalla navigazione le pagine indicate (le altre tornano visibili); salvato nel browser. */
+    setHiddenPages(ids) {
+      hidden = new Set((ids || []).filter(id => id !== PINNED && pages.has(id)));
+      store.set('xvb.pages.hidden', [...hidden]);
+      paintNav(); leaveIfGone(); app.emit('pages');
+    }
+  });
 
   async function show(id, intent) {
     let p = pages.get(id) || pages.get(config.pages[0].id);

@@ -1,0 +1,29 @@
+/* Metriche: riquadri in alto, quattro grafici in griglia, tabella per indice, testo Prometheus grezzo. */
+@import url('../corpus/corpus.css');
+.mt{display:grid;gap:16px}
+.mtlab{font-size:13px;color:var(--muted)}
+#mtEvery{width:auto}
+.mtlive{display:inline-flex;align-items:center;gap:7px;font:500 12px var(--mono);color:var(--muted)}
+.mtlive::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c-other)}
+.mtlive.on::before{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
+.mtlive.err{color:var(--danger)}.mtlive.err::before{background:var(--danger)}
+.mttiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mttile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;gap:4px;min-width:0}
+.mttile span{font-size:12px;color:var(--muted)}
+.mttile b{font:600 22px var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mttile small{font:500 12px var(--sans);color:var(--muted);margin-left:4px}
+.mttile em{font-style:normal;font-size:11.5px;color:var(--muted)}
+.mterr{grid-column:1/-1;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.mtgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.mtgrid{grid-template-columns:minmax(0,1fr)}}
+.mtcard{padding:12px 14px 10px}
+.mtcard h3{margin:0 0 8px;font-size:13.5px;font-weight:600}
+.mtchart{min-height:150px}
+.mtchart .msg{padding:50px 12px}
+.mttable{border-collapse:collapse;width:100%;font-size:12.5px}
+.mttable th{text-align:right;font:500 11px var(--mono);color:var(--muted);padding:6px;border-bottom:1px solid var(--line)}
+.mttable td{text-align:right;padding:6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.mttable th:first-child,.mttable td:first-child{text-align:left}
+.mtraw{padding:10px 14px}
+.mtraw summary{cursor:pointer;font-size:13px;color:var(--muted)}
+.mtraw pre{margin:10px 0 0;max-height:360px;overflow:auto;font:11.5px/1.5 var(--mono);white-space:pre;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:10px}

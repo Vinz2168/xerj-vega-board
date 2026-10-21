@@ -4,6 +4,8 @@
 
 import { DEMO_MAP, demoData } from './data.js';
 import { wild } from '../util.js';
+import { memoryRoute } from './memory.js';
+import { demoMetrics } from './metrics.js';
 import { ivMs } from '../time.js';
 
 const dv = (doc, f) => doc[f.endsWith('.keyword') ? f.slice(0, -8) : f];
@@ -245,6 +247,8 @@ export function demoRoute(method, rawPath, body) {
     const line = r => cols.map((c, i) => String(r[c]).padEnd(w[i])).join(' ');
     return { status: 200, body: (params.has('v') ? line(Object.fromEntries(cols.map(c => [c, c]))) + '\n' : '') + rows.map(line).join('\n') + '\n' };
   }
+  if (seg[0] === '_memory') return memoryRoute(M, seg, params, body);
+  if (seg[0] === 'v1' && seg[1] === 'metrics') return M === 'GET' ? { status: 200, body: demoMetrics() } : ro();
   if (seg[0] === '_cluster' && seg[1] === 'health') return { status: 200, body: { cluster_name: 'demo', status: 'green', number_of_nodes: 1, active_primary_shards: demoIndices().length, active_shards: demoIndices().length, unassigned_shards: 0 } };
   if (seg[0] === '_msearch' || seg[1] === '_msearch') {
     if (M !== 'POST' && M !== 'GET') return ro();

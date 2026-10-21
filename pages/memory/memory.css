@@ -1,0 +1,24 @@
+/* Agent Memory: stessa impaginazione di Corpus (namespace a sinistra, voci a destra). */
+@import url('../corpus/corpus.css');
+.mmopen{flex:0 1 420px;display:flex;gap:8px;min-width:0}
+.mmopen input{flex:1;min-width:0;font-family:var(--mono);font-size:13px}
+.mmrows li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px}
+.mmrows button[data-sel]{grid-template-columns:10px minmax(0,1fr)}
+.mmrows .mmx{display:grid;place-items:center;border:0;background:transparent;color:var(--muted);width:26px;height:26px;padding:0;border-radius:6px;cursor:pointer;font-size:16px;line-height:1;opacity:.55}
+.mmrows li:hover .mmx,.mmrows .mmx:focus-visible{opacity:1}
+.mmrows .mmx:hover{background:var(--sunk);color:var(--fg)}
+.mmnote{margin:0;padding:8px 14px 14px;font-size:12px}
+.mmq select{width:auto}
+.mmrh{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 4px}
+.mmrh .warnt{color:var(--warn)}
+.mmlist{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:10px}
+.mmlist>.msg{padding:28px 12px}
+.mmitem{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:8px;background:var(--bg)}
+.mmtext{margin:0;font-size:14px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.mmmeta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.mmmeta .chip{padding:2px 9px;font-size:11.5px}
+.mmmeta .chip span{color:var(--muted)}
+.mmid{font-size:11px;color:var(--muted)}
+.mmdel{border:0;background:transparent;color:var(--muted);width:28px;height:28px;border-radius:6px;display:grid;place-items:center;cursor:pointer}
+.mmdel:hover{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}
+.mmquote{display:block;font-style:italic;color:var(--fg)}

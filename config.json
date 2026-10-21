@@ -8,10 +8,12 @@
   "pages": [
     { "id": "search", "title": { "en": "Search", "it": "Ricerca" }, "module": "pages/search/index.js", "css": "pages/search/search.css", "engines": ["xerj", "demo"] },
     { "id": "corpus", "title": { "en": "Corpus Hub", "it": "Corpus Hub" }, "module": "pages/corpus/index.js", "css": "pages/corpus/corpus.css", "engines": ["xerj"] },
+    { "id": "memory", "title": { "en": "Agent Memory", "it": "Memoria agenti" }, "module": "pages/memory/index.js", "css": "pages/memory/memory.css", "engines": ["xerj", "demo"] },
     { "id": "dashboard", "title": { "en": "Dashboard", "it": "Dashboard" }, "module": "pages/dashboard/index.js", "css": "pages/dashboard/dashboard.css" },
     { "id": "discover", "title": { "en": "Discover", "it": "Discover" }, "module": "pages/discover/index.js", "css": "pages/discover/discover.css" },
     { "id": "devtools", "title": { "en": "Dev Tools", "it": "Dev Tools" }, "module": "pages/devtools/index.js", "css": "pages/devtools/devtools.css" },
     { "id": "indices", "title": { "en": "Indices", "it": "Indici" }, "module": "pages/indices/index.js", "css": "pages/indices/indices.css", "engines": ["xerj", "demo"] },
+    { "id": "metrics", "title": { "en": "Metrics", "it": "Metriche" }, "module": "pages/metrics/index.js", "css": "pages/metrics/metrics.css", "engines": ["xerj", "demo"] },
     { "id": "settings", "title": { "en": "Settings", "it": "Impostazioni" }, "module": "pages/settings/index.js", "css": "pages/settings/settings.css", "engines": ["xerj", "demo"] }
   ],
   "widgets": [

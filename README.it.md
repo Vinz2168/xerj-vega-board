@@ -23,8 +23,10 @@ e per qualsiasi motore con API compatibile Elasticsearch. Ogni grafico è un wid
 - **Widget**: metrica, serie temporale, serie per categoria, classifica, distribuzione, doppio donut, mappa di calore, documenti, ricerca
   con evidenziazione, elenco opzioni, Vega-Lite libero, più un «obiettivo» (metrica contro soglia) come esempio di widget personalizzato.
 - **Solo con XERJ** (e in demo): **Ricerca** nel codice e nei documenti scritti da `xerj autoindex` (prima le definizioni,
-  il blocco che corrisponde con le righe vere), **Corpus Hub** (catalogo, pack caricati, domande tramite `/_hub/v1`) e
-  **Indici** (mapping, impostazioni e **index pattern** usati da Discover e dalle dashboard).
+  il blocco che corrisponde con le righe vere), **Corpus Hub** (catalogo, pack caricati, domande tramite `/_hub/v1`),
+  **Indici** (mapping, impostazioni e **index pattern** usati da Discover e dalle dashboard), **Memoria agenti** (sfogliare,
+  richiamare e ripulire ciò che ricordano gli agenti AI, `/_memory`) e **Metriche** (query al secondo, percentili di latenza,
+  indicizzazione, memoria e WAL campionati da `/v1/metrics`). Da Impostazioni si possono nascondere pagine dalla navigazione.
   Con Elasticsearch/OpenSearch la board resta quella classica.
 - **Due stili**: classico (barra in alto) e **Nova** (sidebar, blu notte e indaco), predefinito con XERJ.
   Nova si ispira al concept *XERJ Companion* di [@pilahito](https://github.com/pilahito)
