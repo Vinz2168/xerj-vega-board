@@ -1,16 +1,17 @@
 // Pagina Agent Memory: la memoria semantica degli agenti di XERJ (/_memory/{namespace}), come nella sidebar del
 // concept XERJ Companion di @pilahito (xerj-org/xerj#1755). Elenco paginato, richiamo (testo, semantico, ibrido)
 // ed eliminazione di una voce con conferma e «Annulla» (la voce si riscrive con lo stesso id).
-// XERJ non ha un endpoint che elenchi i namespace (gli indici .xerj-memory-* sono riservati): la pagina ricorda
-// nel browser quelli aperti. Solo con XERJ e in demo (config.json → pages[].engines).
+// XERJ non ha (ancora) un endpoint che elenchi i namespace: la pagina li ricava dagli indici riservati che li
+// contengono (_cat/indices/.xerj-memory-*, leggibile con una chiave che raggiunge il namespace riservato) e, se il
+// nodo rifiuta, mostra quelli aperti da questo browser. Solo con XERJ e in demo (config.json → pages[].engines).
 
 import { $, esc, store, fmtNum } from '../../core/util.js';
 import { t } from '../../core/i18n.js';
 import { confirm } from '../../core/ui.js';
 import { demoNamespaces } from '../../core/demo/memory.js';
 
-const PAGE = 50, MODES = ['text', 'semantic', 'hybrid'];
-let app, data = null, recall = null, busy = 0;
+const PAGE = 50, MODES = ['text', 'semantic', 'hybrid'], PREFIX = '.xerj-memory-';
+let app, data = null, recall = null, busy = 0, listed = null;   // listed: Map namespace → documenti, null se il nodo non li elenca
 const view = Object.assign({ recent: [], sel: '', q: '', mode: 'text', k: 10 }, store.get('xvb.memory', {}));
 const save = () => store.set('xvb.memory', view);
 const errOf = r => r.body?.error?.reason || r.body?.error?.type || (typeof r.body === 'string' && r.body.trim()) || ('HTTP ' + r.status);
@@ -51,9 +52,8 @@ const page = {
     await page.refresh();
   },
   async refresh() {
-    // in demo i namespace di esempio; su XERJ solo quelli aperti da questo browser
-    if (app.backend.isDemo()) for (const ns of demoNamespaces()) if (!view.recent.includes(ns)) view.recent.push(ns);
-    if (!view.sel && view.recent.length) view.sel = view.recent[0];
+    listed = await discover();
+    if (!view.sel) view.sel = names()[0] || '';
     save(); paintList();
     await load();
     if (view.q) await ask();
@@ -69,20 +69,35 @@ async function open(ns) {
   $('#mmNs').value = '';
   paintList(); await load();
 }
+/** Namespace sul nodo dagli indici .xerj-memory-<ns>. Un grafo («brain») aggiunge .xerj-memory-<ns>-edges accanto
+    al namespace <ns>: quello si salta. In demo i namespace di esempio. null = non elencabili (es. 403). */
+async function discover() {
+  if (app.backend.isDemo()) return new Map(demoNamespaces().map(n => [n, null]));
+  const r = await app.backend.request('GET', '_cat/indices/' + PREFIX + '*?format=json&h=index,docs.count');
+  if (!r.ok || !Array.isArray(r.body)) return null;
+  const all = new Map(r.body.filter(x => x.index?.startsWith(PREFIX)).map(x => [x.index.slice(PREFIX.length), +x['docs.count'] || 0]));
+  for (const n of [...all.keys()]) if (n.endsWith('-edges') && all.has(n.slice(0, -6))) all.delete(n);
+  return new Map([...all].sort((a, b) => a[0].localeCompare(b[0])));
+}
+/** Prima i namespace del nodo, poi quelli aperti da qui che il nodo non elenca (es. non ancora creati). */
+const names = () => [...(listed?.keys() || []), ...view.recent.filter(n => !listed?.has(n))];
+
 function forgetRecent(ns) {
   view.recent = view.recent.filter(x => x !== ns);
-  if (view.sel === ns) { view.sel = view.recent[0] || ''; recall = null; view.q = ''; }
+  if (view.sel === ns) { view.sel = names()[0] || ''; recall = null; view.q = ''; }
   save(); paintList(); load();
 }
 
 function paintList() {
-  $('#mmNsList').innerHTML = view.recent.map(n => `<option value="${esc(n)}">`).join('');
+  const all = names();
+  const count = n => n === view.sel && data?.namespace === n && !data.error ? data.count : listed?.get(n);
+  $('#mmNsList').innerHTML = all.map(n => `<option value="${esc(n)}">`).join('');
   $('#mmList').innerHTML = `<div class="ixhead cphead"><b>${t('mem.namespaces')}</b></div>
-    <ul class="cprows mmrows">${view.recent.map(n => `<li><button type="button" data-sel="${esc(n)}" aria-pressed="${n === view.sel}">
-      <span class="cpdot${n === view.sel ? ' on' : ''}"></span><span class="cpnm"><b>${esc(n)}</b>${n === view.sel && data?.namespace === n && !data.error ? `<span>${t('mem.count', { n: fmtNum(data.count) })}</span>` : ''}</span></button>
-      <button type="button" class="mmx" data-forget="${esc(n)}" title="${esc(t('mem.forgetRecent'))}" aria-label="${esc(t('mem.forgetRecent'))}: ${esc(n)}">×</button></li>`).join('')
+    <ul class="cprows mmrows">${all.map(n => `<li><button type="button" data-sel="${esc(n)}" aria-pressed="${n === view.sel}">
+      <span class="cpdot${n === view.sel ? ' on' : ''}"></span><span class="cpnm"><b>${esc(n)}</b>${count(n) != null ? `<span>${t('mem.count', { n: fmtNum(count(n)) })}</span>` : ''}</span></button>
+      ${listed?.has(n) ? '' : `<button type="button" class="mmx" data-forget="${esc(n)}" title="${esc(t('mem.forgetRecent'))}" aria-label="${esc(t('mem.forgetRecent'))}: ${esc(n)}">×</button>`}</li>`).join('')
       || `<li class="msg">${t('mem.noRecent')}</li>`}</ul>
-    <p class="help mmnote">${app.backend.isDemo() ? t('mem.noteDemo') : t('mem.noteList')}</p>`;
+    <p class="help mmnote">${app.backend.isDemo() ? t('mem.noteDemo') : listed ? t('mem.noteNode') : t('mem.noteList')}</p>`;
 }
 
 /** Prima pagina (o la successiva con more = true) di GET /_memory/{ns}. */

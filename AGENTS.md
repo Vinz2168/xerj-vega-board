@@ -189,8 +189,9 @@ Per togliere una pagina a tutti gli utenti, invece, si toglie da `config.json �
 Legge e modifica la memoria degli agenti: `GET /_memory/<ns>?from&size` (elenco, dal più recente), `POST /_memory/<ns>/_recall`
 (`query`, `k`, `semantic: true` o `hybrid: true`) e `DELETE /_memory/<ns>/<id>` (con conferma; «Annulla» riscrive la voce con
 `POST /_memory/<ns>` e lo stesso id, testo e metadati, ma non un vettore fornito dall'agente). Non elimina mai un namespace intero.
-XERJ non ha un endpoint che elenchi i namespace (gli indici `.xerj-memory-*` sono riservati e le wildcard non li includono):
-la pagina ricorda nel browser quelli aperti (`xvb.memory`). Un elenco dei namespace va chiesto a XERJ, non aggirato qui.
+XERJ non ha un endpoint che elenchi i namespace: la pagina li ricava da `_cat/indices/.xerj-memory-*` (servono permessi sul
+namespace riservato, es. la chiave admin; si salta `<ns>-edges`, l'indice del grafo accanto a `<ns>`) e, se il nodo rifiuta,
+mostra quelli aperti da questo browser (`xvb.memory`). Il modo ibrido del richiamo richiede una versione di XERJ con la #918.
 
 ### Metriche (pagina Metriche, XERJ e demo)
 
